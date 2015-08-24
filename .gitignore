@@ -2,7 +2,7 @@
 *.o
 *.a
 *.so
-
+0;95;c
 # Folders
 _obj
 _test
@@ -22,3 +22,6 @@ _testmain.go
 *.exe
 *.test
 *.prof
+
+host_rsa
+id_rsa
