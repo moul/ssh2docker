@@ -3,11 +3,9 @@ package ssh2docker
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"os"
 	"os/exec"
-	"strings"
 	"sync"
 	"syscall"
 
@@ -16,10 +14,12 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+// Server is the ssh2docker main structure
 type Server struct {
 	sshConfig *ssh.ServerConfig
 }
 
+// NewServer initialize a new Server instance with default values
 func NewServer() (*Server, error) {
 	server := Server{}
 	server.sshConfig = &ssh.ServerConfig{
@@ -28,36 +28,8 @@ func NewServer() (*Server, error) {
 	return &server, nil
 }
 
-// AddHostKey parses/loads an ssh key and registers it to the server
-func (s *Server) AddHostKey(keystring string) error {
-	// Check if keystring is a key path or a key string
-	keypath := os.ExpandEnv(strings.Replace(keystring, "~", "$HOME", 2))
-	_, err := os.Stat(keypath)
-	var keybytes []byte
-	if err == nil {
-		keybytes, err = ioutil.ReadFile(keypath)
-		if err != nil {
-			return err
-		}
-	} else {
-		keybytes = []byte(keystring)
-	}
-
-	// Parse SSH priate key
-	hostkey, err := ssh.ParsePrivateKey(keybytes)
-	if err != nil {
-		return err
-	}
-
-	// Register key to the server
-	s.sshConfig.AddHostKey(hostkey)
-	return nil
-}
-
-func (s *Server) PasswordCallback(conn ssh.ConnMetadata, pass []byte) (*ssh.Permissions, error) {
-	return nil, nil
-}
-
+// Handle is the SSH client entrypoint, it takes a net.Conn
+// instance and handle all the ssh and ssh2docker stuff
 func (s *Server) Handle(netConn net.Conn) error {
 	conn, chans, reqs, err := ssh.NewServerConn(netConn, s.sshConfig)
 	if err != nil {
