@@ -23,5 +23,5 @@ _testmain.go
 *.test
 *.prof
 
-host_rsa
-id_rsa
+host_rsa*
+id_rsa*
