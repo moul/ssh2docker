@@ -30,6 +30,6 @@ func (s *Server) AddHostKey(keystring string) error {
 	}
 
 	// Register key to the server
-	s.sshConfig.AddHostKey(hostkey)
+	s.SshConfig.AddHostKey(hostkey)
 	return nil
 }
