@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 	"syscall"
 
@@ -15,10 +16,12 @@ import (
 
 // Client is one client connection
 type Client struct {
-	Conn   *ssh.ServerConn
-	Chans  <-chan ssh.NewChannel
-	Reqs   <-chan *ssh.Request
-	Server *Server
+	Conn     *ssh.ServerConn
+	Chans    <-chan ssh.NewChannel
+	Reqs     <-chan *ssh.Request
+	Server   *Server
+	Pty, Tty *os.File
+	Env      Environment
 }
 
 // NewClient initializes a new client
@@ -28,8 +31,15 @@ func NewClient(conn *ssh.ServerConn, chans <-chan ssh.NewChannel, reqs <-chan *s
 		Chans:  chans,
 		Reqs:   reqs,
 		Server: server,
+		Env: Environment{
+			"TERM":              os.Getenv("TERM"),
+			"DOCKER_HOST":       os.Getenv("DOCKER_HOST"),
+			"DOCKER_CERT_PATH":  os.Getenv("DOCKER_CERT_PATH"),
+			"DOCKER_TLS_VERIFY": os.Getenv("DOCKER_TLS_VERIFY"),
+		},
 	}
-	logrus.Infof("NewClient: User=%q, ClientVersion=%1", conn.User(), fmt.Sprintf("%x", conn.ClientVersion()))
+
+	logrus.Infof("NewClient: User=%q, ClientVersion=%q", conn.User(), fmt.Sprintf("%x", conn.ClientVersion()))
 	return &client
 }
 
@@ -37,6 +47,7 @@ func NewClient(conn *ssh.ServerConn, chans <-chan ssh.NewChannel, reqs <-chan *s
 func (c *Client) HandleRequests() error {
 	go func(in <-chan *ssh.Request) {
 		for req := range in {
+			logrus.Debugf("HandleRequest: %v", req)
 			if req.WantReply {
 				req.Reply(false, nil)
 			}
@@ -58,27 +69,37 @@ func (c *Client) HandleChannels() error {
 // HandleChannel handles one SSH channel
 func (c *Client) HandleChannel(newChannel ssh.NewChannel) error {
 	if newChannel.ChannelType() != "session" {
+		logrus.Debugf("Unknown channel type: %s", newChannel.ChannelType())
 		newChannel.Reject(ssh.UnknownChannelType, "unknown channel type")
 		return nil
 	}
 
 	channel, requests, err := newChannel.Accept()
 	if err != nil {
-		logrus.Errorf("%s", err)
+		logrus.Errorf("newChannel.Accept failed: %v", err)
 		return err
 	}
+	logrus.Debugf("HandleChannel.channel: %v", channel)
 
-	logrus.Infof("Creating pty...")
+	logrus.Debug("Creating pty...")
 	f, tty, err := pty.Open()
 	if err != nil {
-		logrus.Errorf("%s", err)
+		logrus.Errorf("pty.Open failed: %v", err)
 		return nil
 	}
+	c.Tty = tty
+	c.Pty = f
 
-	termEnv := "xterm"
+	c.HandleChannelRequests(channel, requests)
 
+	return nil
+}
+
+// HandleChannelRequests handles channel requests
+func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh.Request) {
 	go func(in <-chan *ssh.Request) {
 		for req := range in {
+			logrus.Debugf("HandleChannelRequests.req: %q", req.Type)
 			ok := false
 			switch req.Type {
 			case "shell":
@@ -88,19 +109,14 @@ func (c *Client) HandleChannel(newChannel ssh.NewChannel) error {
 				ok = true
 
 				args := []string{"run", "-it", "--rm", c.Conn.User(), "/bin/sh"}
-				logrus.Infof("Executing docker %s", args)
+				logrus.Debugf("Executing 'docker %s'", strings.Join(args, " "))
 				cmd := exec.Command("docker", args...)
-				cmd.Env = []string{
-					"TERM=" + termEnv,
-					"DOCKER_HOST=" + os.Getenv("DOCKER_HOST"),
-					"DOCKER_CERT_PATH=" + os.Getenv("DOCKER_CERT_PATH"),
-					"DOCKER_TLS_VERIFY=" + os.Getenv("DOCKER_TLS_VERIFY"),
-				}
+				cmd.Env = c.Env.List()
 
-				defer tty.Close()
-				cmd.Stdout = tty
-				cmd.Stdin = tty
-				cmd.Stderr = tty
+				defer c.Tty.Close()
+				cmd.Stdout = c.Tty
+				cmd.Stdin = c.Tty
+				cmd.Stderr = c.Tty
 				cmd.SysProcAttr = &syscall.SysProcAttr{
 					Setctty: true,
 					Setsid:  true,
@@ -108,47 +124,49 @@ func (c *Client) HandleChannel(newChannel ssh.NewChannel) error {
 
 				err := cmd.Start()
 				if err != nil {
-					logrus.Warnf("%s", err)
+					logrus.Warnf("cmd.Start failed: %v", err)
 					continue
 				}
 
 				var once sync.Once
 				close := func() {
 					channel.Close()
-					logrus.Infof("session closed")
+					logrus.Debug("session closed")
 				}
 
 				go func() {
-					io.Copy(channel, f)
+					io.Copy(channel, c.Pty)
 					once.Do(close)
 				}()
 
 				go func() {
-					io.Copy(f, channel)
+					io.Copy(c.Pty, channel)
 					once.Do(close)
 				}()
 
 			case "pty-req":
 				ok = true
 				termLen := req.Payload[3]
-				termEnv = string(req.Payload[4 : termLen+4])
+				c.Env["TERM"] = string(req.Payload[4 : termLen+4])
 				w, h := parseDims(req.Payload[termLen+4:])
-				SetWinsize(f.Fd(), w, h)
-				logrus.Infof("pty-req: %s", termEnv)
+				SetWinsize(c.Pty.Fd(), w, h)
+				logrus.Debugf("pty-req: %s", c.Env["TERM"])
 
 			case "window-changed":
 				w, h := parseDims(req.Payload)
-				SetWinsize(f.Fd(), w, h)
+				SetWinsize(c.Pty.Fd(), w, h)
 				continue
+
+			default:
+				logrus.Debugf("Unhandled request type: %q: %v", req.Type, req)
 			}
 
 			if req.WantReply {
 				if !ok {
-					logrus.Infof("Declining %s request...", req.Type)
+					logrus.Debugf("Declining %s request...", req.Type)
 				}
 				req.Reply(ok, nil)
 			}
 		}
 	}(requests)
-	return nil
 }

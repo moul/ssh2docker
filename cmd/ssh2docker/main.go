@@ -52,6 +52,8 @@ func main() {
 	app.Version = VERSION
 	app.Usage = "SSH portal to Docker containers"
 
+	app.Before = hookBefore
+
 	app.Flags = []cli.Flag{
 		cli.BoolFlag{
 			Name:  "verbose, V",

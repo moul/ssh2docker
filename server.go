@@ -3,6 +3,7 @@ package ssh2docker
 import (
 	"net"
 
+	"github.com/Sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -24,6 +25,7 @@ func NewServer() (*Server, error) {
 // Handle is the SSH client entrypoint, it takes a net.Conn
 // instance and handle all the ssh and ssh2docker stuff
 func (s *Server) Handle(netConn net.Conn) error {
+	logrus.Debugf("Server.Handle netConn=%v", netConn)
 	// Initialize a Client object
 	conn, chans, reqs, err := ssh.NewServerConn(netConn, s.SshConfig)
 	if err != nil {
