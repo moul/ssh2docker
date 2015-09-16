@@ -99,10 +99,10 @@ func (c *Client) HandleChannel(newChannel ssh.NewChannel) error {
 func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh.Request) {
 	go func(in <-chan *ssh.Request) {
 		for req := range in {
-			logrus.Debugf("HandleChannelRequests.req: %q", req.Type)
 			ok := false
 			switch req.Type {
 			case "shell":
+				logrus.Debugf("HandleChannelRequests.req shell")
 				if len(req.Payload) != 0 {
 					break
 				}
@@ -150,12 +150,20 @@ func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 				c.Env["TERM"] = string(req.Payload[4 : termLen+4])
 				w, h := parseDims(req.Payload[termLen+4:])
 				SetWinsize(c.Pty.Fd(), w, h)
-				logrus.Debugf("pty-req: %s", c.Env["TERM"])
+				logrus.Debugf("HandleChannelRequests.req pty-req: TERM=%q w=%q h=%q", c.Env["TERM"], int(w), int(h))
 
-			case "window-changed":
+			case "window-change":
 				w, h := parseDims(req.Payload)
 				SetWinsize(c.Pty.Fd(), w, h)
 				continue
+
+			case "env":
+				keyLen := req.Payload[3]
+				key := string(req.Payload[4 : keyLen+4])
+				valueLen := req.Payload[keyLen+7]
+				value := string(req.Payload[keyLen+8 : keyLen+8+valueLen])
+				logrus.Debugf("HandleChannelRequets.req 'env': %s=%q", key, value)
+				c.Env[key] = value
 
 			default:
 				logrus.Debugf("Unhandled request type: %q: %v", req.Type, req)
