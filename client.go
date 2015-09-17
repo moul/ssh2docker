@@ -14,23 +14,29 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+var clientCounter = 0
+
 // Client is one client connection
 type Client struct {
-	Conn     *ssh.ServerConn
-	Chans    <-chan ssh.NewChannel
-	Reqs     <-chan *ssh.Request
-	Server   *Server
-	Pty, Tty *os.File
-	Env      Environment
+	Idx        int
+	ChannelIdx int
+	Conn       *ssh.ServerConn
+	Chans      <-chan ssh.NewChannel
+	Reqs       <-chan *ssh.Request
+	Server     *Server
+	Pty, Tty   *os.File
+	Env        Environment
 }
 
 // NewClient initializes a new client
 func NewClient(conn *ssh.ServerConn, chans <-chan ssh.NewChannel, reqs <-chan *ssh.Request, server *Server) *Client {
 	client := Client{
-		Conn:   conn,
-		Chans:  chans,
-		Reqs:   reqs,
-		Server: server,
+		Idx:        clientCounter,
+		ChannelIdx: 0,
+		Conn:       conn,
+		Chans:      chans,
+		Reqs:       reqs,
+		Server:     server,
 		Env: Environment{
 			"TERM":              os.Getenv("TERM"),
 			"DOCKER_HOST":       os.Getenv("DOCKER_HOST"),
@@ -38,8 +44,9 @@ func NewClient(conn *ssh.ServerConn, chans <-chan ssh.NewChannel, reqs <-chan *s
 			"DOCKER_TLS_VERIFY": os.Getenv("DOCKER_TLS_VERIFY"),
 		},
 	}
+	clientCounter++
 
-	logrus.Infof("NewClient: User=%q, ClientVersion=%q", conn.User(), fmt.Sprintf("%x", conn.ClientVersion()))
+	logrus.Infof("NewClient (%d): User=%q, ClientVersion=%q", client.Idx, conn.User(), fmt.Sprintf("%x", conn.ClientVersion()))
 	return &client
 }
 
@@ -79,7 +86,8 @@ func (c *Client) HandleChannel(newChannel ssh.NewChannel) error {
 		logrus.Errorf("newChannel.Accept failed: %v", err)
 		return err
 	}
-	logrus.Debugf("HandleChannel.channel: %v", channel)
+	c.ChannelIdx++
+	logrus.Debugf("HandleChannel.channel (client=%d channel=%d): %v", c.Idx, c.ChannelIdx, channel)
 
 	logrus.Debug("Creating pty...")
 	f, tty, err := pty.Open()
