@@ -4,6 +4,7 @@ import (
 	"net"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
@@ -69,6 +70,11 @@ func main() {
 			Usage: "Path or complete SSH host key to use",
 			Value: "built-in",
 		},
+		cli.StringFlag{
+			Name:  "allowed-images",
+			Usage: "List of allowed images, i.e: alpine,ubuntu:trusty,1cf3e6c",
+			Value: "",
+		},
 	}
 
 	app.Action = Action
@@ -92,6 +98,11 @@ func Action(c *cli.Context) {
 	server, err := ssh2docker.NewServer()
 	if err != nil {
 		logrus.Fatalf("Cannot create server: %v", err)
+	}
+
+	// Restrict list of allowed images
+	if c.String("allowed-images") != "" {
+		server.AllowedImages = strings.Split(c.String("allowed-images"), ",")
 	}
 
 	// Register the SSH host key
