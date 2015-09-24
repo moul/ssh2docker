@@ -1,5 +1,6 @@
 language: go
 
 script:
-- go build ./...
+- make build
+- make test
 - go run ./cmd/gotty-client/main.go --help || true

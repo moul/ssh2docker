@@ -6,7 +6,7 @@ all: build
 
 
 build:
-	go get ./...
+	go get -t ./...
 	gofmt -w $(PACKAGES) $(COMMANDS)
 	go test -i $(PACKAGES) $(COMMANDS)
 	for command in $(COMMANDS); do \
@@ -15,7 +15,7 @@ build:
 
 
 test:
-	go get ./...
+	go get -t ./...
 	go test -i $(PACKAGES) $(COMMANDS)
 	go test -v $(PACKAGES) $(COMMANDS)
 
