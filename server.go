@@ -11,6 +11,8 @@ import (
 type Server struct {
 	SshConfig *ssh.ServerConfig
 	// Clients   []Client
+
+	AllowedImages []string
 }
 
 // NewServer initialize a new Server instance with default values
@@ -19,6 +21,7 @@ func NewServer() (*Server, error) {
 	server.SshConfig = &ssh.ServerConfig{
 		PasswordCallback: server.PasswordCallback,
 	}
+	server.AllowedImages = nil
 	return &server, nil
 }
 
