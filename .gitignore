@@ -26,3 +26,5 @@ _testmain.go
 
 host_rsa*
 id_rsa*
+
+profile.out
