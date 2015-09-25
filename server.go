@@ -15,6 +15,7 @@ type Server struct {
 	AllowedImages []string
 	DefaultShell  string
 	DockerRunArgs []string
+	NoJoin        bool
 }
 
 // NewServer initialize a new Server instance with default values

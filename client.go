@@ -122,13 +122,19 @@ func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 				ok = true
 
 				// checking if a container already exists for this user
-				cmd := exec.Command("docker", "ps", "--filter=label=ssh2docker", "--filter=label=image:ubuntu", "--filter=label=user:nobody", "--quiet", "--no-trunc")
-				buf, err := cmd.CombinedOutput()
-				if err != nil {
-					logrus.Warnf("docker ps ... failed: %v", err)
-					continue
+				existingContainer := ""
+				if !c.Server.NoJoin {
+					cmd := exec.Command("docker", "ps", "--filter=label=ssh2docker", fmt.Sprintf("--filter=label=image:%s", c.ImageName), fmt.Sprintf("--filter=label=user:%s", c.RemoteUser), "--quiet", "--no-trunc")
+					buf, err := cmd.CombinedOutput()
+					if err != nil {
+						logrus.Warnf("docker ps ... failed: %v", err)
+						continue
+					}
+					existingContainer = strings.TrimSpace(string(buf))
 				}
-				existingContainer := strings.TrimSpace(string(buf))
+
+				var cmd *exec.Cmd
+				var err error
 
 				// Opening Docker process
 				if existingContainer != "" {

@@ -85,6 +85,10 @@ func main() {
 			Usage: "'docker run' arguments",
 			Value: "-it --rm",
 		},
+		cli.BoolFlag{
+			Name:  "no-join",
+			Usage: "Do not join existing containers, always create new ones",
+		},
 	}
 
 	app.Action = Action
@@ -115,9 +119,10 @@ func Action(c *cli.Context) {
 		server.AllowedImages = strings.Split(c.String("allowed-images"), ",")
 	}
 
-	// Set defaults
+	// Configure server
 	server.DefaultShell = c.String("shell")
 	server.DockerRunArgs = strings.Split(c.String("docker-run-args"), " ")
+	server.NoJoin = c.Bool("no-join")
 
 	// Register the SSH host key
 	hostKey := c.String("host-key")
