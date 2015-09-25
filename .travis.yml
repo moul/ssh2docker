@@ -1,6 +1,22 @@
 language: go
 
+go:
+- 1.4
+- 1.5
+- tip
+
+matrix:
+  allow_failures:
+  - go: tip
+
+before_install:
+- go get -u github.com/axw/gocov/gocov
+- go get -u github.com/mattn/goveralls
+- go get golang.org/x/tools/cmd/cover
+
 script:
 - make build
 - make test
 - go run ./cmd/gotty-client/main.go --help || true
+- make cover
+- goveralls -service=travis-ci -v -covermode=count -coverprofile=profile.out
