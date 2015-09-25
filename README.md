@@ -74,6 +74,38 @@ Codename:	trusty
 # ^D
 ```
 
+## Install
+
+```console
+$ go get github.com/moul/ssh2docker/...
+```
+
+## Usage
+
+```
+NAME:
+   ssh2docker - SSH portal to Docker containers
+
+USAGE:
+   ssh2docker [global options] command [command options] [arguments...]
+
+AUTHOR(S):
+   Manfred Touron <https://github.com/moul/ssh2docker>
+
+COMMANDS:
+   help, h	Shows a list of commands or help for one command
+
+GLOBAL OPTIONS:
+   --verbose, -V		Enable verbose mode
+   --bind, -b ":2222"		Listen to address
+   --host-key, -k "built-in"	Path or complete SSH host key to use
+   --allowed-images 		List of allowed images, i.e: alpine,ubuntu:trusty,1cf3e6c
+   --shell "/bin/sh"		Default shell
+   --docker-run-args "-it --rm"	'docker run' arguments
+   --help, -h			show help
+   --version, -v		print the version
+```
+
 ## License
 
 MIT
