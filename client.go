@@ -116,7 +116,9 @@ func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 				}
 				ok = true
 
-				args := []string{"run", "-it", "--rm", c.Conn.User(), "/bin/sh"}
+				args := []string{"run"}
+				args = append(args, c.Server.DockerRunArgs...)
+				args = append(args, c.Conn.User(), c.Server.DefaultShell)
 				logrus.Debugf("Executing 'docker %s'", strings.Join(args, " "))
 				cmd := exec.Command("docker", args...)
 				cmd.Env = c.Env.List()

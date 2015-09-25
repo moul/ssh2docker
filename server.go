@@ -13,6 +13,8 @@ type Server struct {
 	// Clients   []Client
 
 	AllowedImages []string
+	DefaultShell  string
+	DockerRunArgs []string
 }
 
 // NewServer initialize a new Server instance with default values
@@ -22,6 +24,8 @@ func NewServer() (*Server, error) {
 		PasswordCallback: server.PasswordCallback,
 	}
 	server.AllowedImages = nil
+	server.DefaultShell = "/bin/sh"
+	server.DockerRunArgs = []string{"-it", "--rm"}
 	return &server, nil
 }
 

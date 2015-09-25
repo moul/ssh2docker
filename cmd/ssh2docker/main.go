@@ -75,6 +75,16 @@ func main() {
 			Usage: "List of allowed images, i.e: alpine,ubuntu:trusty,1cf3e6c",
 			Value: "",
 		},
+		cli.StringFlag{
+			Name:  "shell",
+			Usage: "Default shell",
+			Value: "/bin/sh",
+		},
+		cli.StringFlag{
+			Name:  "docker-run-args",
+			Usage: "'docker run' arguments",
+			Value: "-it --rm",
+		},
 	}
 
 	app.Action = Action
@@ -104,6 +114,10 @@ func Action(c *cli.Context) {
 	if c.String("allowed-images") != "" {
 		server.AllowedImages = strings.Split(c.String("allowed-images"), ",")
 	}
+
+	// Set defaults
+	server.DefaultShell = c.String("shell")
+	server.DockerRunArgs = strings.Split(c.String("docker-run-args"), " ")
 
 	// Register the SSH host key
 	hostKey := c.String("host-key")
