@@ -1,7 +1,9 @@
 # ssh2docker
 :wrench: SSH server that creates a Docker container per connection (chroot++)
 
+[![Build Status](https://travis-ci.org/moul/ssh2docker.svg?branch=master)](https://travis-ci.org/moul/ssh2docker)
 [![GoDoc](https://godoc.org/github.com/moul/ssh2docker?status.svg)](https://godoc.org/github.com/moul/ssh2docker)
+[![License](https://img.shields.io/github/license/moul/ssh2docker.svg)](https://github.com/moul/ssh2docker/blob/master/LICENSE)
 
 ## Example
 
