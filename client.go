@@ -26,6 +26,8 @@ type Client struct {
 	Server     *Server
 	Pty, Tty   *os.File
 	Env        Environment
+	RemoteUser string
+	ImageName  string
 }
 
 // NewClient initializes a new client
@@ -37,6 +39,8 @@ func NewClient(conn *ssh.ServerConn, chans <-chan ssh.NewChannel, reqs <-chan *s
 		Chans:      chans,
 		Reqs:       reqs,
 		Server:     server,
+		ImageName:  conn.User(),
+		RemoteUser: "nobody",
 		Env: Environment{
 			"TERM":              os.Getenv("TERM"),
 			"DOCKER_HOST":       os.Getenv("DOCKER_HOST"),
@@ -44,6 +48,7 @@ func NewClient(conn *ssh.ServerConn, chans <-chan ssh.NewChannel, reqs <-chan *s
 			"DOCKER_TLS_VERIFY": os.Getenv("DOCKER_TLS_VERIFY"),
 		},
 	}
+
 	clientCounter++
 
 	logrus.Infof("NewClient (%d): User=%q, ClientVersion=%q", client.Idx, conn.User(), fmt.Sprintf("%x", conn.ClientVersion()))
@@ -116,12 +121,31 @@ func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 				}
 				ok = true
 
-				args := []string{"run"}
-				args = append(args, c.Server.DockerRunArgs...)
-				args = append(args, c.Conn.User(), c.Server.DefaultShell)
-				logrus.Debugf("Executing 'docker %s'", strings.Join(args, " "))
-				cmd := exec.Command("docker", args...)
-				cmd.Env = c.Env.List()
+				// checking if a container already exists for this user
+				cmd := exec.Command("docker", "ps", "--filter=label=ssh2docker", "--filter=label=image:ubuntu", "--filter=label=user:nobody", "--quiet", "--no-trunc")
+				buf, err := cmd.CombinedOutput()
+				if err != nil {
+					logrus.Warnf("docker ps ... failed: %v", err)
+					continue
+				}
+				existingContainer := strings.TrimSpace(string(buf))
+
+				// Opening Docker process
+				if existingContainer != "" {
+					// Attaching to an existing container
+					args := []string{"exec", "-it", existingContainer, c.Server.DefaultShell}
+					logrus.Debugf("Executing 'docker %s'", strings.Join(args, " "))
+					cmd = exec.Command("docker", args...)
+				} else {
+					// Creating and attaching to a new container
+					args := []string{"run"}
+					args = append(args, c.Server.DockerRunArgs...)
+					args = append(args, "--label=ssh2docker", fmt.Sprintf("--label=user:%s", c.RemoteUser), fmt.Sprintf("--label=image:%s", c.ImageName))
+					args = append(args, c.ImageName, c.Server.DefaultShell)
+					logrus.Debugf("Executing 'docker %s'", strings.Join(args, " "))
+					cmd = exec.Command("docker", args...)
+					cmd.Env = c.Env.List()
+				}
 
 				defer c.Tty.Close()
 				cmd.Stdout = c.Tty
@@ -132,7 +156,7 @@ func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 					Setsid:  true,
 				}
 
-				err := cmd.Start()
+				err = cmd.Start()
 				if err != nil {
 					logrus.Warnf("cmd.Start failed: %v", err)
 					continue
