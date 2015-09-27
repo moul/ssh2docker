@@ -3,8 +3,8 @@ package ssh2docker
 import (
 	"net"
 
-	"github.com/Sirupsen/logrus"
-	"golang.org/x/crypto/ssh"
+	"github.com/moul/ssh2docker/vendor/github.com/Sirupsen/logrus"
+	"github.com/moul/ssh2docker/vendor/golang.org/x/crypto/ssh"
 )
 
 // Server is the ssh2docker main structure

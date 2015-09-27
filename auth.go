@@ -3,7 +3,7 @@ package ssh2docker
 import (
 	"fmt"
 
-	"golang.org/x/crypto/ssh"
+	"github.com/moul/ssh2docker/vendor/golang.org/x/crypto/ssh"
 )
 
 // ImageIsAllowed returns true if the target image is in the allowed list

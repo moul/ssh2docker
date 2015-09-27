@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"golang.org/x/crypto/ssh"
+	"github.com/moul/ssh2docker/vendor/golang.org/x/crypto/ssh"
 )
 
 // AddHostKey parses/loads an ssh key and registers it to the server

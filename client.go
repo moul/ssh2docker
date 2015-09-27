@@ -9,9 +9,9 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/Sirupsen/logrus"
-	"github.com/kr/pty"
-	"golang.org/x/crypto/ssh"
+	"github.com/moul/ssh2docker/vendor/github.com/Sirupsen/logrus"
+	"github.com/moul/ssh2docker/vendor/github.com/kr/pty"
+	"github.com/moul/ssh2docker/vendor/golang.org/x/crypto/ssh"
 )
 
 var clientCounter = 0
