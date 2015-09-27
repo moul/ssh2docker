@@ -79,7 +79,7 @@ Codename:	trusty
 Install latest version using Golang (recommended)
 
 ```console
-$ go get github.com/moul/ssh2docker/...
+$ go get github.com/moul/ssh2docker/cmd/ssh2docker
 ```
 
 ---
