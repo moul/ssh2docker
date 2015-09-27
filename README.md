@@ -76,8 +76,26 @@ Codename:	trusty
 
 ## Install
 
+Install latest version using Golang (recommended)
+
 ```console
 $ go get github.com/moul/ssh2docker/...
+```
+
+---
+
+Install latest version using Homebrew (Mac OS X)
+
+```console
+$ brew install https://raw.githubusercontent.com/moul/ssh2docker/master/contrib/homebrew/assh.rb --HEAD
+
+```
+
+or the latest released version
+
+```console
+$ brew install https://raw.githubusercontent.com/moul/ssh2docker/master/contrib/homebrew/assh.rb
+
 ```
 
 ## Usage
