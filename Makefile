@@ -39,3 +39,8 @@ cover:
 convey:
 	go get github.com/smartystreets/goconvey
 	goconvey -cover -port=9031 -workDir="$(realpath .)" -depth=-1
+
+
+.PHONY: build-docker
+build-docker:
+	make -C contrib/docker
