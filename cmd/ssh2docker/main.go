@@ -89,6 +89,10 @@ func main() {
 			Name:  "no-join",
 			Usage: "Do not join existing containers, always create new ones",
 		},
+		cli.BoolFlag{
+			Name:  "clean-on-startup",
+			Usage: "Cleanup Docker containers created by ssh2docker on start",
+		},
 	}
 
 	app.Action = Action
@@ -123,6 +127,7 @@ func Action(c *cli.Context) {
 	server.DefaultShell = c.String("shell")
 	server.DockerRunArgs = strings.Split(c.String("docker-run-args"), " ")
 	server.NoJoin = c.Bool("no-join")
+	server.CleanOnStartup = c.Bool("clean-on-startup")
 
 	// Register the SSH host key
 	hostKey := c.String("host-key")
@@ -141,6 +146,11 @@ func Action(c *cli.Context) {
 		logrus.Fatalf("Failed to start listener on %q: %v", bindAddress, err)
 	}
 	logrus.Infof("Listening on %q", bindAddress)
+
+	// Initialize server
+	if err = server.Init(); err != nil {
+		logrus.Fatalf("Failed to initialize the server: %v", err)
+	}
 
 	// Accept new clients
 	for {

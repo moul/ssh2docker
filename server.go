@@ -12,10 +12,13 @@ type Server struct {
 	SshConfig *ssh.ServerConfig
 	// Clients   []Client
 
-	AllowedImages []string
-	DefaultShell  string
-	DockerRunArgs []string
-	NoJoin        bool
+	AllowedImages  []string
+	DefaultShell   string
+	DockerRunArgs  []string
+	NoJoin         bool
+	CleanOnStartup bool
+
+	initialized bool
 }
 
 // NewServer initialize a new Server instance with default values
@@ -30,9 +33,30 @@ func NewServer() (*Server, error) {
 	return &server, nil
 }
 
+// Init initializes server
+func (s *Server) Init() error {
+	// Initialize only once
+	if s.initialized {
+		return nil
+	}
+
+	if s.CleanOnStartup {
+		err := DockerCleanup()
+		if err != nil {
+			logrus.Warnf("Failed to cleanup docker containers: %v", err)
+		}
+	}
+	s.initialized = true
+	return nil
+}
+
 // Handle is the SSH client entrypoint, it takes a net.Conn
 // instance and handle all the ssh and ssh2docker stuff
 func (s *Server) Handle(netConn net.Conn) error {
+	if err := s.Init(); err != nil {
+		return err
+	}
+
 	logrus.Debugf("Server.Handle netConn=%v", netConn)
 	// Initialize a Client object
 	conn, chans, reqs, err := ssh.NewServerConn(netConn, s.SshConfig)

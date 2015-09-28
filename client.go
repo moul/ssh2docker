@@ -124,7 +124,7 @@ func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 				// checking if a container already exists for this user
 				existingContainer := ""
 				if !c.Server.NoJoin {
-					cmd := exec.Command("docker", "ps", "--filter=label=ssh2docker", fmt.Sprintf("--filter=label=image:%s", c.ImageName), fmt.Sprintf("--filter=label=user:%s", c.RemoteUser), "--quiet", "--no-trunc")
+					cmd := exec.Command("docker", "ps", "--filter=label=ssh2docker", fmt.Sprintf("--filter=label=image=%s", c.ImageName), fmt.Sprintf("--filter=label=user=%s", c.RemoteUser), "--quiet", "--no-trunc")
 					buf, err := cmd.CombinedOutput()
 					if err != nil {
 						logrus.Warnf("docker ps ... failed: %v", err)
@@ -146,7 +146,7 @@ func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 					// Creating and attaching to a new container
 					args := []string{"run"}
 					args = append(args, c.Server.DockerRunArgs...)
-					args = append(args, "--label=ssh2docker", fmt.Sprintf("--label=user:%s", c.RemoteUser), fmt.Sprintf("--label=image:%s", c.ImageName))
+					args = append(args, "--label=ssh2docker", fmt.Sprintf("--label=user=%s", c.RemoteUser), fmt.Sprintf("--label=image=%s", c.ImageName))
 					args = append(args, c.ImageName, c.Server.DefaultShell)
 					logrus.Debugf("Executing 'docker %s'", strings.Join(args, " "))
 					cmd = exec.Command("docker", args...)
