@@ -100,6 +100,16 @@ $ brew install https://raw.githubusercontent.com/moul/ssh2docker/master/contrib/
 
 ```
 
+## Test with Docker
+
+You can test **ssh2docker** within Docker, but you will have some limitations, i.e: cannot run with boot2docker.
+
+Here is an example about how to use ssh2docker inside Docker
+
+```console
+$ docker run --privileged -v /var/lib/docker:/var/lib/docker -it --rm -p 2222:2222 moul/ssh2docker
+```
+
 ## Usage
 
 ```
@@ -130,6 +140,8 @@ GLOBAL OPTIONS:
 
 ### master (unreleased)
 
+* Add docker support ([#17](https://github.com/moul/ssh2docker/issues/17))
+* Add GOXC support to build binaries for multiple architectures ([#18](https://github.com/moul/ssh2docker/issues/18))
 * Support of 'ssh2docker --clean-on-startup' ([#23](https://github.com/moul/ssh2docker/issues/23))
 * Add homebrew support ([#16](https://github.com/moul/ssh2docker/issues/16))
 * Add Changelog ([#19](https://github.com/moul/ssh2docker/issues/19))

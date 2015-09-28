@@ -1,4 +1,4 @@
-FROM scratch
+FROM docker
 
 ADD ./ssh2docker /ssh2docker
 
