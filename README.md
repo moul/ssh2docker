@@ -124,6 +124,37 @@ GLOBAL OPTIONS:
    --version, -v		print the version
 ```
 
+## Changelog
+
+### master (unreleased)
+
+* Support of 'ssh2docker --clean-on-startup' ([#23](https://github.com/moul/ssh2docker/issues/23))
+* Add homebrew support ([#16](https://github.com/moul/ssh2docker/issues/16))
+* Add Changelog ([#19](https://github.com/moul/ssh2docker/issues/19))
+
+[full commits list](https://github.com/moul/ssh2docker/compare/v1.0.1...master)
+
+### [v1.0.1](https://github.com/moul/ssh2docker/releases/tag/v1.0.1) (2015-09-27)
+
+* Using [party](https://github.com/mjibson/party) to manage dependencies
+
+[full commits list](https://github.com/moul/ssh2docker/compare/v1.0.0...v1.0.1)
+
+### [v1.0.0](https://github.com/moul/ssh2docker/releases/tag/v1.0.0) (2015-09-27)
+
+**Initial release**
+
+#### Features
+
+* Basic logging
+* Handling environment-variable requests
+* Support of `--allowed-images` option ([#4](https://github.com/moul/ssh2docker/issues/4))
+* Ability to configure `docker run` arguments ([#13](https://github.com/moul/ssh2docker/issues/13))
+* Reconnecting to existing containers ([#14](https://github.com/moul/ssh2docker/issues/14))
+* Support of `--no-join` option ([#6](https://github.com/moul/ssh2docker/issues/6))
+
+[full commits list](https://github.com/moul/ssh2docker/compare/a398db225cefe1d1de642217be1c06d6c5d721b0...v1.0.0)
+
 ## License
 
 MIT
