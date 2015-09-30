@@ -93,6 +93,10 @@ func main() {
 			Name:  "clean-on-startup",
 			Usage: "Cleanup Docker containers created by ssh2docker on start",
 		},
+		cli.StringFlag{
+			Name:  "password-auth-script",
+			Usage: "Password auth hook file",
+		},
 	}
 
 	app.Action = Action
@@ -128,6 +132,7 @@ func Action(c *cli.Context) {
 	server.DockerRunArgs = strings.Split(c.String("docker-run-args"), " ")
 	server.NoJoin = c.Bool("no-join")
 	server.CleanOnStartup = c.Bool("clean-on-startup")
+	server.PasswordAuthScript = c.String("password-auth-script")
 
 	// Register the SSH host key
 	hostKey := c.String("host-key")

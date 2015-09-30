@@ -140,6 +140,7 @@ GLOBAL OPTIONS:
 
 ### master (unreleased)
 
+* Support of 'ssh2docker --password-auth-script' options ([#28](https://github.com/moul/ssh2docker/issues/28))
 * Add docker support ([#17](https://github.com/moul/ssh2docker/issues/17))
 * Add GOXC support to build binaries for multiple architectures ([#18](https://github.com/moul/ssh2docker/issues/18))
 * Support of 'ssh2docker --clean-on-startup' ([#23](https://github.com/moul/ssh2docker/issues/23))
