@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/moul/ssh2docker/vendor/github.com/Sirupsen/logrus"
 	"github.com/moul/ssh2docker/vendor/golang.org/x/crypto/ssh"
 )
 
