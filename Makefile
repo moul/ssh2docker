@@ -44,3 +44,10 @@ convey:
 .PHONY: build-docker
 build-docker:
 	make -C contrib/docker
+
+
+.PHONY: docker-ps
+docker-ps:
+	@# consider run 'make $@' inside a unix' watch
+	@#   i.e:   'watch make $@'
+	docker ps --filter=label=ssh2docker -a
