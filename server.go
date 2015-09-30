@@ -10,13 +10,15 @@ import (
 // Server is the ssh2docker main structure
 type Server struct {
 	SshConfig *ssh.ServerConfig
-	// Clients   []Client
+	// Clients   map[string]Client
+	ClientConfigs map[string]*ClientConfig
 
-	AllowedImages  []string
-	DefaultShell   string
-	DockerRunArgs  []string
-	NoJoin         bool
-	CleanOnStartup bool
+	AllowedImages      []string
+	DefaultShell       string
+	DockerRunArgs      []string
+	NoJoin             bool
+	CleanOnStartup     bool
+	PasswordAuthScript string
 
 	initialized bool
 }
@@ -27,7 +29,7 @@ func NewServer() (*Server, error) {
 	server.SshConfig = &ssh.ServerConfig{
 		PasswordCallback: server.PasswordCallback,
 	}
-	server.AllowedImages = nil
+	server.ClientConfigs = make(map[string]*ClientConfig, 0)
 	server.DefaultShell = "/bin/sh"
 	server.DockerRunArgs = []string{"-it", "--rm"}
 	return &server, nil
@@ -64,6 +66,7 @@ func (s *Server) Handle(netConn net.Conn) error {
 		return err
 	}
 	client := NewClient(conn, chans, reqs, s)
+	client.Config = s.ClientConfigs[conn.RemoteAddr().String()]
 
 	// Handle requests
 	if err = client.HandleRequests(); err != nil {

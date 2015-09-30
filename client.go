@@ -26,8 +26,13 @@ type Client struct {
 	Server     *Server
 	Pty, Tty   *os.File
 	Env        Environment
-	RemoteUser string
-	ImageName  string
+	Config     *ClientConfig
+}
+
+type ClientConfig struct {
+	ImageName  string `json:"image-name",omitempty`
+	RemoteUser string `json:"remote-user",omitempty`
+	Allowed    bool   `json:"allowed",omitempty`
 }
 
 // NewClient initializes a new client
@@ -39,13 +44,17 @@ func NewClient(conn *ssh.ServerConn, chans <-chan ssh.NewChannel, reqs <-chan *s
 		Chans:      chans,
 		Reqs:       reqs,
 		Server:     server,
-		ImageName:  conn.User(),
-		RemoteUser: "nobody",
 		Env: Environment{
 			"TERM":              os.Getenv("TERM"),
 			"DOCKER_HOST":       os.Getenv("DOCKER_HOST"),
 			"DOCKER_CERT_PATH":  os.Getenv("DOCKER_CERT_PATH"),
 			"DOCKER_TLS_VERIFY": os.Getenv("DOCKER_TLS_VERIFY"),
+		},
+
+		// Default ClientConfig, maybe we should completely remove it
+		Config: &ClientConfig{
+			ImageName:  conn.User(),
+			RemoteUser: "anonymous",
 		},
 	}
 
@@ -124,7 +133,7 @@ func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 				// checking if a container already exists for this user
 				existingContainer := ""
 				if !c.Server.NoJoin {
-					cmd := exec.Command("docker", "ps", "--filter=label=ssh2docker", fmt.Sprintf("--filter=label=image=%s", c.ImageName), fmt.Sprintf("--filter=label=user=%s", c.RemoteUser), "--quiet", "--no-trunc")
+					cmd := exec.Command("docker", "ps", "--filter=label=ssh2docker", fmt.Sprintf("--filter=label=image=%s", c.Config.ImageName), fmt.Sprintf("--filter=label=user=%s", c.Config.RemoteUser), "--quiet", "--no-trunc")
 					buf, err := cmd.CombinedOutput()
 					if err != nil {
 						logrus.Warnf("docker ps ... failed: %v", err)
@@ -146,8 +155,8 @@ func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 					// Creating and attaching to a new container
 					args := []string{"run"}
 					args = append(args, c.Server.DockerRunArgs...)
-					args = append(args, "--label=ssh2docker", fmt.Sprintf("--label=user=%s", c.RemoteUser), fmt.Sprintf("--label=image=%s", c.ImageName))
-					args = append(args, c.ImageName, c.Server.DefaultShell)
+					args = append(args, "--label=ssh2docker", fmt.Sprintf("--label=user=%s", c.Config.RemoteUser), fmt.Sprintf("--label=image=%s", c.Config.ImageName))
+					args = append(args, c.Config.ImageName, c.Server.DefaultShell)
 					logrus.Debugf("Executing 'docker %s'", strings.Join(args, " "))
 					cmd = exec.Command("docker", args...)
 					cmd.Env = c.Env.List()
