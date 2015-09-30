@@ -38,7 +38,7 @@ cover:
 .PHONY: convey
 convey:
 	go get github.com/smartystreets/goconvey
-	goconvey -cover -port=9031 -workDir="$(realpath .)" -depth=-1
+	goconvey -cover -port=9031 -workDir="$(realpath .)" -depth=0
 
 
 .PHONY: build-docker
