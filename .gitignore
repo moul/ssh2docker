@@ -30,3 +30,4 @@ id_rsa*
 profile.out
 
 .docker-container-built
+dist/
