@@ -27,6 +27,7 @@ type Client struct {
 	Pty, Tty   *os.File
 	Env        Environment
 	Config     *ClientConfig
+	ClientID   string
 }
 
 type ClientConfig struct {
@@ -39,6 +40,7 @@ type ClientConfig struct {
 func NewClient(conn *ssh.ServerConn, chans <-chan ssh.NewChannel, reqs <-chan *ssh.Request, server *Server) *Client {
 	client := Client{
 		Idx:        clientCounter,
+		ClientID:   conn.RemoteAddr().String(),
 		ChannelIdx: 0,
 		Conn:       conn,
 		Chans:      chans,
@@ -57,6 +59,8 @@ func NewClient(conn *ssh.ServerConn, chans <-chan ssh.NewChannel, reqs <-chan *s
 			RemoteUser: "anonymous",
 		},
 	}
+
+	server.ClientConfigs[client.ClientID] = client.Config
 
 	clientCounter++
 
