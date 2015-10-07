@@ -141,6 +141,7 @@ GLOBAL OPTIONS:
 ### master (unreleased)
 
 * Fix runtime error on Linux ([#38](https://github.com/moul/ssh2docker/issues/38))
+* Initial version of the native Scaleway support ([#36](https://github.com/moul/ssh2docker/issues/36))
 * Support of 'ssh2docker --password-auth-script' options ([#28](https://github.com/moul/ssh2docker/issues/28))
 * Add docker support ([#17](https://github.com/moul/ssh2docker/issues/17))
 * Add GOXC support to build binaries for multiple architectures ([#18](https://github.com/moul/ssh2docker/issues/18))
