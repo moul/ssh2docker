@@ -138,7 +138,7 @@ GLOBAL OPTIONS:
 
 ## Changelog
 
-### master (unreleased)
+### [v1.1.0](https://github.com/moul/ssh2docker/releases/tag/v1.1.0) (2015-10-07)
 
 * Fix runtime error on Linux ([#38](https://github.com/moul/ssh2docker/issues/38))
 * Initial version of the native Scaleway support ([#36](https://github.com/moul/ssh2docker/issues/36))
@@ -149,7 +149,7 @@ GLOBAL OPTIONS:
 * Add homebrew support ([#16](https://github.com/moul/ssh2docker/issues/16))
 * Add Changelog ([#19](https://github.com/moul/ssh2docker/issues/19))
 
-[full commits list](https://github.com/moul/ssh2docker/compare/v1.0.1...master)
+[full commits list](https://github.com/moul/ssh2docker/compare/v1.0.1...v1.1.0)
 
 ### [v1.0.1](https://github.com/moul/ssh2docker/releases/tag/v1.0.1) (2015-09-27)
 
