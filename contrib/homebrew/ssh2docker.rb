@@ -3,8 +3,8 @@ require "language/go"
 class Ssh2docker < Formula
   desc "SSH server that creates a Docker container per connection (chroot++)"
   homepage "https://github.com/moul/ssh2docker"
-  url "https://github.com/moul/ssh2docker/archive/v1.0.1.tar.gz"
-  sha256 "8ff5355f7c0970433f7c5d1ff1a8ce9467e78c2011f4b886d4dca05d68b36786"
+  url "https://github.com/moul/ssh2docker/archive/v1.1.0.tar.gz"
+  sha256 "4838f01676221f4b0df490049cc27df5dde1ae083628148ec900bc0cef950e6a"
 
   head "https://github.com/moul/ssh2docker.git"
 
