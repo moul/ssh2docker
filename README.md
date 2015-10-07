@@ -138,6 +138,12 @@ GLOBAL OPTIONS:
 
 ## Changelog
 
+### master (unreleased)
+
+* No entry
+
+[full commits list](https://github.com/moul/ssh2docker/compare/v1.1.0...master)
+
 ### [v1.1.0](https://github.com/moul/ssh2docker/releases/tag/v1.1.0) (2015-10-07)
 
 * Fix runtime error on Linux ([#38](https://github.com/moul/ssh2docker/issues/38))
