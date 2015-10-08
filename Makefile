@@ -9,7 +9,7 @@ all: build
 build: $(notdir $(COMMANDS))
 
 run: build
-	./ssh2docker
+	./ssh2docker -V
 
 $(notdir $(COMMANDS)): $(SOURCES)
 	go get -t ./...
