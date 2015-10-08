@@ -197,6 +197,13 @@ func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 					once.Do(close)
 				}()
 
+				go func() {
+					if err := cmd.Wait(); err != nil {
+						logrus.Warnf("cmd.Wait failed: %v", err)
+					}
+					once.Do(close)
+				}()
+
 			case "pty-req":
 				ok = true
 				termLen := req.Payload[3]

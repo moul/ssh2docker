@@ -140,7 +140,7 @@ GLOBAL OPTIONS:
 
 ### master (unreleased)
 
-* No entry
+* Kill connection when exiting shell (ctrl+D) ([#43](https://github.com/moul/ssh2docker/issues/43))
 
 [full commits list](https://github.com/moul/ssh2docker/compare/v1.1.0...master)
 
