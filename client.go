@@ -34,6 +34,7 @@ type ClientConfig struct {
 	ImageName  string `json:"image-name",omitempty`
 	RemoteUser string `json:"remote-user",omitempty`
 	Allowed    bool   `json:"allowed",omitempty`
+	IsLocal    bool   `json:"is_local",omitempty`
 }
 
 // NewClient initializes a new client
@@ -53,11 +54,15 @@ func NewClient(conn *ssh.ServerConn, chans <-chan ssh.NewChannel, reqs <-chan *s
 			"DOCKER_TLS_VERIFY": os.Getenv("DOCKER_TLS_VERIFY"),
 		},
 
-		// Default ClientConfig, maybe we should completely remove it
+		// Default ClientConfig, will be overwritten if a hook is used
 		Config: &ClientConfig{
 			ImageName:  conn.User(),
 			RemoteUser: "anonymous",
 		},
+	}
+
+	if server.LocalUser != "" {
+		client.Config.IsLocal = client.Config.ImageName == server.LocalUser
 	}
 
 	server.ClientConfigs[client.ClientID] = client.Config
@@ -134,36 +139,40 @@ func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 				}
 				ok = true
 
-				// checking if a container already exists for this user
-				existingContainer := ""
-				if !c.Server.NoJoin {
-					cmd := exec.Command("docker", "ps", "--filter=label=ssh2docker", fmt.Sprintf("--filter=label=image=%s", c.Config.ImageName), fmt.Sprintf("--filter=label=user=%s", c.Config.RemoteUser), "--quiet", "--no-trunc")
-					buf, err := cmd.CombinedOutput()
-					if err != nil {
-						logrus.Warnf("docker ps ... failed: %v", err)
-						continue
-					}
-					existingContainer = strings.TrimSpace(string(buf))
-				}
-
 				var cmd *exec.Cmd
 				var err error
 
-				// Opening Docker process
-				if existingContainer != "" {
-					// Attaching to an existing container
-					args := []string{"exec", "-it", existingContainer, c.Server.DefaultShell}
-					logrus.Debugf("Executing 'docker %s'", strings.Join(args, " "))
-					cmd = exec.Command("docker", args...)
+				if c.Config.IsLocal {
+					cmd = exec.Command("/bin/bash")
 				} else {
-					// Creating and attaching to a new container
-					args := []string{"run"}
-					args = append(args, c.Server.DockerRunArgs...)
-					args = append(args, "--label=ssh2docker", fmt.Sprintf("--label=user=%s", c.Config.RemoteUser), fmt.Sprintf("--label=image=%s", c.Config.ImageName))
-					args = append(args, c.Config.ImageName, c.Server.DefaultShell)
-					logrus.Debugf("Executing 'docker %s'", strings.Join(args, " "))
-					cmd = exec.Command("docker", args...)
-					cmd.Env = c.Env.List()
+					// checking if a container already exists for this user
+					existingContainer := ""
+					if !c.Server.NoJoin {
+						cmd := exec.Command("docker", "ps", "--filter=label=ssh2docker", fmt.Sprintf("--filter=label=image=%s", c.Config.ImageName), fmt.Sprintf("--filter=label=user=%s", c.Config.RemoteUser), "--quiet", "--no-trunc")
+						buf, err := cmd.CombinedOutput()
+						if err != nil {
+							logrus.Warnf("docker ps ... failed: %v", err)
+							continue
+						}
+						existingContainer = strings.TrimSpace(string(buf))
+					}
+
+					// Opening Docker process
+					if existingContainer != "" {
+						// Attaching to an existing container
+						args := []string{"exec", "-it", existingContainer, c.Server.DefaultShell}
+						logrus.Debugf("Executing 'docker %s'", strings.Join(args, " "))
+						cmd = exec.Command("docker", args...)
+					} else {
+						// Creating and attaching to a new container
+						args := []string{"run"}
+						args = append(args, c.Server.DockerRunArgs...)
+						args = append(args, "--label=ssh2docker", fmt.Sprintf("--label=user=%s", c.Config.RemoteUser), fmt.Sprintf("--label=image=%s", c.Config.ImageName))
+						args = append(args, c.Config.ImageName, c.Server.DefaultShell)
+						logrus.Debugf("Executing 'docker %s'", strings.Join(args, " "))
+						cmd = exec.Command("docker", args...)
+						cmd.Env = c.Env.List()
+					}
 				}
 
 				defer c.Tty.Close()
