@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/moul/ssh2docker/vendor/github.com/Sirupsen/logrus"
 	"github.com/moul/ssh2docker/vendor/github.com/kr/pty"
@@ -212,6 +213,14 @@ func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 					}
 					once.Do(close)
 				}()
+
+			case "exec":
+				command := string(req.Payload)
+				logrus.Debugf("HandleChannelRequests.req exec: %q", command)
+				ok = false
+
+				fmt.Fprintln(channel, "⚠️  ssh2docker: exec is not yet implemented. https://github.com/moul/ssh2docker/issues/51.")
+				time.Sleep(3 * time.Second)
 
 			case "pty-req":
 				ok = true
