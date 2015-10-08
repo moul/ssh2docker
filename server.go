@@ -20,6 +20,7 @@ type Server struct {
 	CleanOnStartup     bool
 	PasswordAuthScript string
 	LocalUser          string
+	Banner             string
 
 	initialized bool
 }
