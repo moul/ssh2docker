@@ -19,6 +19,7 @@ type Server struct {
 	NoJoin             bool
 	CleanOnStartup     bool
 	PasswordAuthScript string
+	LocalUser          string
 
 	initialized bool
 }

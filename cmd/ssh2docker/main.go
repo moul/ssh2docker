@@ -97,6 +97,10 @@ func main() {
 			Name:  "password-auth-script",
 			Usage: "Password auth hook file",
 		},
+		cli.StringFlag{
+			Name:  "local-user",
+			Usage: "If setted, you can spawn a local shell (not withing docker) by SSHing to this user",
+		},
 	}
 
 	app.Action = Action
@@ -133,6 +137,7 @@ func Action(c *cli.Context) {
 	server.NoJoin = c.Bool("no-join")
 	server.CleanOnStartup = c.Bool("clean-on-startup")
 	server.PasswordAuthScript = c.String("password-auth-script")
+	server.LocalUser = c.String("local-user")
 
 	// Register the SSH host key
 	hostKey := c.String("host-key")

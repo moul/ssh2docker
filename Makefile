@@ -9,7 +9,7 @@ all: build
 build: $(notdir $(COMMANDS))
 
 run: build
-	./ssh2docker -V
+	./ssh2docker -V --local-user=local-user
 
 $(notdir $(COMMANDS)): $(SOURCES)
 	go get -t ./...

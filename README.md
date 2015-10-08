@@ -140,6 +140,7 @@ GLOBAL OPTIONS:
 
 ### master (unreleased)
 
+* Support of `--local-user` option, to allow a specific user to be a local shell ([#44](https://github.com/moul/ssh2docker/issues/44))
 * Kill connection when exiting shell (ctrl+D) ([#43](https://github.com/moul/ssh2docker/issues/43))
 
 [full commits list](https://github.com/moul/ssh2docker/compare/v1.1.0...master)
