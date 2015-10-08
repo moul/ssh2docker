@@ -101,6 +101,10 @@ func main() {
 			Name:  "local-user",
 			Usage: "If setted, you can spawn a local shell (not withing docker) by SSHing to this user",
 		},
+		cli.StringFlag{
+			Name:  "banner",
+			Usage: "Display a banner on connection",
+		},
 	}
 
 	app.Action = Action
@@ -138,6 +142,7 @@ func Action(c *cli.Context) {
 	server.CleanOnStartup = c.Bool("clean-on-startup")
 	server.PasswordAuthScript = c.String("password-auth-script")
 	server.LocalUser = c.String("local-user")
+	server.Banner = c.String("banner")
 
 	// Register the SSH host key
 	hostKey := c.String("host-key")

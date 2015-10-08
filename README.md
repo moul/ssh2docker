@@ -140,6 +140,7 @@ GLOBAL OPTIONS:
 
 ### master (unreleased)
 
+* Support of `--banner` option ([#26](https://github.com/moul/ssh2docker/issues/26))
 * Add a not-yet-implemented warning for exec ([#51](https://github.com/moul/ssh2docker/issues/51))
 * Support of `--local-user` option, to allow a specific user to be a local shell ([#44](https://github.com/moul/ssh2docker/issues/44))
 * Kill connection when exiting shell (ctrl+D) ([#43](https://github.com/moul/ssh2docker/issues/43))

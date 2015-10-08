@@ -130,6 +130,8 @@ func (c *Client) HandleChannel(newChannel ssh.NewChannel) error {
 // HandleChannelRequests handles channel requests
 func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh.Request) {
 	go func(in <-chan *ssh.Request) {
+		defer c.Tty.Close()
+
 		for req := range in {
 			ok := false
 			switch req.Type {
@@ -176,7 +178,13 @@ func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 					}
 				}
 
-				defer c.Tty.Close()
+				if c.Server.Banner != "" {
+					banner := c.Server.Banner
+					banner = strings.Replace(banner, "\r", "", -1)
+					banner = strings.Replace(banner, "\n", "\n\r", -1)
+					fmt.Fprintf(channel, "%s\n\r", banner)
+				}
+
 				cmd.Stdout = c.Tty
 				cmd.Stdin = c.Tty
 				cmd.Stderr = c.Tty
