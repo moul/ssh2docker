@@ -57,7 +57,7 @@ func NewClient(conn *ssh.ServerConn, chans <-chan ssh.NewChannel, reqs <-chan *s
 
 		// Default ClientConfig, will be overwritten if a hook is used
 		Config: &ClientConfig{
-			ImageName:  conn.User(),
+			ImageName:  strings.Replace(conn.User(), "_", "/", -1),
 			RemoteUser: "anonymous",
 		},
 	}
