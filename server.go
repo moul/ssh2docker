@@ -69,6 +69,7 @@ func (s *Server) Handle(netConn net.Conn) error {
 	}
 	client := NewClient(conn, chans, reqs, s)
 	client.Config = s.ClientConfigs[conn.RemoteAddr().String()]
+	client.Config.Env.ApplyDefaults()
 
 	// Handle requests
 	if err = client.HandleRequests(); err != nil {

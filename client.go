@@ -26,16 +26,16 @@ type Client struct {
 	Reqs       <-chan *ssh.Request
 	Server     *Server
 	Pty, Tty   *os.File
-	Env        Environment
 	Config     *ClientConfig
 	ClientID   string
 }
 
 type ClientConfig struct {
-	ImageName  string `json:"image-name",omitempty`
-	RemoteUser string `json:"remote-user",omitempty`
-	Allowed    bool   `json:"allowed",omitempty`
-	IsLocal    bool   `json:"is_local",omitempty`
+	ImageName  string      `json:"image-name",omitempty`
+	RemoteUser string      `json:"remote-user",omitempty`
+	Allowed    bool        `json:"allowed",omitempty`
+	Env        Environment `json:"env",omitempty`
+	IsLocal    bool        `json:"is_local",omitempty`
 }
 
 // NewClient initializes a new client
@@ -48,17 +48,12 @@ func NewClient(conn *ssh.ServerConn, chans <-chan ssh.NewChannel, reqs <-chan *s
 		Chans:      chans,
 		Reqs:       reqs,
 		Server:     server,
-		Env: Environment{
-			"TERM":              os.Getenv("TERM"),
-			"DOCKER_HOST":       os.Getenv("DOCKER_HOST"),
-			"DOCKER_CERT_PATH":  os.Getenv("DOCKER_CERT_PATH"),
-			"DOCKER_TLS_VERIFY": os.Getenv("DOCKER_TLS_VERIFY"),
-		},
 
 		// Default ClientConfig, will be overwritten if a hook is used
 		Config: &ClientConfig{
 			ImageName:  strings.Replace(conn.User(), "_", "/", -1),
 			RemoteUser: "anonymous",
+			Env:        Environment{},
 		},
 	}
 
@@ -66,7 +61,9 @@ func NewClient(conn *ssh.ServerConn, chans <-chan ssh.NewChannel, reqs <-chan *s
 		client.Config.IsLocal = client.Config.ImageName == server.LocalUser
 	}
 
-	server.ClientConfigs[client.ClientID] = client.Config
+	if _, found := server.ClientConfigs[client.ClientID]; !found {
+		server.ClientConfigs[client.ClientID] = client.Config
+	}
 
 	clientCounter++
 
@@ -174,7 +171,7 @@ func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 						args = append(args, c.Config.ImageName, c.Server.DefaultShell)
 						logrus.Debugf("Executing 'docker %s'", strings.Join(args, " "))
 						cmd = exec.Command("docker", args...)
-						cmd.Env = c.Env.List()
+						cmd.Env = c.Config.Env.List()
 					}
 				}
 
@@ -233,10 +230,10 @@ func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 			case "pty-req":
 				ok = true
 				termLen := req.Payload[3]
-				c.Env["TERM"] = string(req.Payload[4 : termLen+4])
+				c.Config.Env["TERM"] = string(req.Payload[4 : termLen+4])
 				w, h := parseDims(req.Payload[termLen+4:])
 				SetWinsize(c.Pty.Fd(), w, h)
-				logrus.Debugf("HandleChannelRequests.req pty-req: TERM=%q w=%q h=%q", c.Env["TERM"], int(w), int(h))
+				logrus.Debugf("HandleChannelRequests.req pty-req: TERM=%q w=%q h=%q", c.Config.Env["TERM"], int(w), int(h))
 
 			case "window-change":
 				w, h := parseDims(req.Payload)
@@ -249,7 +246,7 @@ func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 				valueLen := req.Payload[keyLen+7]
 				value := string(req.Payload[keyLen+8 : keyLen+8+valueLen])
 				logrus.Debugf("HandleChannelRequets.req 'env': %s=%q", key, value)
-				c.Env[key] = value
+				c.Config.Env[key] = value
 
 			default:
 				logrus.Debugf("Unhandled request type: %q: %v", req.Type, req)
