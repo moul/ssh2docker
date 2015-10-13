@@ -52,6 +52,7 @@ build-docker: contrib/docker/.docker-container-built
 contrib/docker/.docker-container-built: dist/latest/ssh2docker_latest_linux_386
 	cp dist/latest/ssh2docker_latest_linux_386 contrib/docker/ssh2docker
 	docker build -t moul/ssh2docker:latest contrib/docker
+	docker tag -t moul/ssh2docker:latest moul/ssh2docker:$(VERSION)
 	docker run -it --rm moul/ssh2docker --version
 	docker inspect --type=image --format="{{ .Id }}" moul/ssh2docker > $@.tmp
 	mv $@.tmp $@
