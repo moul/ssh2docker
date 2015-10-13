@@ -135,7 +135,7 @@ $ docker run --privileged -v /var/lib/docker:/var/lib/docker -it --rm -p 2222:22
 
 ### master (unreleased)
 
-* Handling custom environment variables when running a password hook script ([#57](https://github.com/moul/ssh2docker/issues/57))
+* Handling custom environment variables, user and command in password script ([#57](https://github.com/moul/ssh2docker/issues/57))
 * Replacing "_" by "/" on default image name to handle ControlMaster on clients
 * Support of `--banner` option ([#26](https://github.com/moul/ssh2docker/issues/26))
 * Add a not-yet-implemented warning for exec ([#51](https://github.com/moul/ssh2docker/issues/51))

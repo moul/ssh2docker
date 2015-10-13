@@ -36,6 +36,8 @@ type ClientConfig struct {
 	Allowed    bool        `json:"allowed",omitempty`
 	Env        Environment `json:"env",omitempty`
 	IsLocal    bool        `json:"is_local",omitempty`
+	Command    []string    `json:"command",omitempty`
+	User       string      `json:"user",omitempty`
 }
 
 // NewClient initializes a new client
@@ -54,6 +56,7 @@ func NewClient(conn *ssh.ServerConn, chans <-chan ssh.NewChannel, reqs <-chan *s
 			ImageName:  strings.Replace(conn.User(), "_", "/", -1),
 			RemoteUser: "anonymous",
 			Env:        Environment{},
+			Command:    make([]string, 0),
 		},
 	}
 
@@ -149,6 +152,7 @@ func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 					existingContainer := ""
 					if !c.Server.NoJoin {
 						cmd := exec.Command("docker", "ps", "--filter=label=ssh2docker", fmt.Sprintf("--filter=label=image=%s", c.Config.ImageName), fmt.Sprintf("--filter=label=user=%s", c.Config.RemoteUser), "--quiet", "--no-trunc")
+						cmd.Env = c.Config.Env.List()
 						buf, err := cmd.CombinedOutput()
 						if err != nil {
 							logrus.Warnf("docker ps ... failed: %v", err)
@@ -163,12 +167,21 @@ func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 						args := []string{"exec", "-it", existingContainer, c.Server.DefaultShell}
 						logrus.Debugf("Executing 'docker %s'", strings.Join(args, " "))
 						cmd = exec.Command("docker", args...)
+						cmd.Env = c.Config.Env.List()
 					} else {
 						// Creating and attaching to a new container
 						args := []string{"run"}
 						args = append(args, c.Server.DockerRunArgs...)
 						args = append(args, "--label=ssh2docker", fmt.Sprintf("--label=user=%s", c.Config.RemoteUser), fmt.Sprintf("--label=image=%s", c.Config.ImageName))
-						args = append(args, c.Config.ImageName, c.Server.DefaultShell)
+						if c.Config.User != "" {
+							args = append(args, "-u", c.Config.User)
+						}
+						args = append(args, c.Config.ImageName)
+						if c.Config.Command != nil {
+							args = append(args, c.Config.Command...)
+						} else {
+							args = append(args, c.Server.DefaultShell)
+						}
 						logrus.Debugf("Executing 'docker %s'", strings.Join(args, " "))
 						cmd = exec.Command("docker", args...)
 						cmd.Env = c.Config.Env.List()
