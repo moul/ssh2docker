@@ -13,7 +13,7 @@ import (
 
 // CheckConfig checks if the ClientConfig has access
 func (s *Server) CheckConfig(config *ClientConfig) error {
-	if !config.Allowed && s.PasswordAuthScript != "" {
+	if !config.Allowed && (s.PasswordAuthScript != "" || s.PublicKeyAuthScript != "") {
 		logrus.Warnf("config.Allowed = false")
 		return fmt.Errorf("Access not allowed")
 	}
