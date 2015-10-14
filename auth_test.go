@@ -6,17 +6,18 @@ import (
 	. "github.com/moul/ssh2docker/vendor/github.com/smartystreets/goconvey/convey"
 )
 
-func TestServer_ImageIsAllowed(t *testing.T) {
-	Convey("Testing Server.ImageIsAllowed", t, FailureContinues, func() {
+func TestServer_CheckConfig(t *testing.T) {
+	Convey("Testing Server.CheckConfig", t, FailureContinues, func() {
+		// FIXME: check with a script
 		server, err := NewServer()
 		So(err, ShouldBeNil)
 		server.AllowedImages = []string{"alpine", "ubuntu:trusty", "abcde123"}
 
-		So(server.ImageIsAllowed("alpine"), ShouldEqual, true)
-		So(server.ImageIsAllowed("ubuntu:trusty"), ShouldEqual, true)
-		So(server.ImageIsAllowed("abcde123"), ShouldEqual, true)
+		So(server.CheckConfig(&ClientConfig{ImageName: "alpine"}), ShouldBeNil)
+		So(server.CheckConfig(&ClientConfig{ImageName: "ubuntu:trusty"}), ShouldBeNil)
+		So(server.CheckConfig(&ClientConfig{ImageName: "abcde123"}), ShouldBeNil)
 
-		So(server.ImageIsAllowed("abcde124"), ShouldEqual, false)
-		So(server.ImageIsAllowed("ubuntu:vivid"), ShouldEqual, false)
+		So(server.CheckConfig(&ClientConfig{ImageName: "abcde124"}), ShouldNotBeNil)
+		So(server.CheckConfig(&ClientConfig{ImageName: "ubuntu:vivid"}), ShouldNotBeNil)
 	})
 }

@@ -13,14 +13,15 @@ type Server struct {
 	// Clients   map[string]Client
 	ClientConfigs map[string]*ClientConfig
 
-	AllowedImages      []string
-	DefaultShell       string
-	DockerRunArgs      []string
-	NoJoin             bool
-	CleanOnStartup     bool
-	PasswordAuthScript string
-	LocalUser          string
-	Banner             string
+	AllowedImages       []string
+	DefaultShell        string
+	DockerRunArgs       []string
+	NoJoin              bool
+	CleanOnStartup      bool
+	PasswordAuthScript  string
+	PublicKeyAuthScript string
+	LocalUser           string
+	Banner              string
 
 	initialized bool
 }
@@ -29,7 +30,9 @@ type Server struct {
 func NewServer() (*Server, error) {
 	server := Server{}
 	server.SshConfig = &ssh.ServerConfig{
-		PasswordCallback: server.PasswordCallback,
+		PasswordCallback:            server.PasswordCallback,
+		PublicKeyCallback:           server.PublicKeyCallback,
+		KeyboardInteractiveCallback: server.KeyboardInteractiveCallback,
 	}
 	server.ClientConfigs = make(map[string]*ClientConfig, 0)
 	server.DefaultShell = "/bin/sh"

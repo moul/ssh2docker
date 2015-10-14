@@ -1,7 +1,8 @@
-PACKAGES := .
-COMMANDS := $(addprefix ./,$(wildcard cmd/*))
-VERSION := $(shell cat .goxc.json | jq -c .PackageVersion | sed 's/"//g')
-SOURCES := $(shell find . -name "*.go")
+PACKAGES := 	.
+COMMANDS := 	$(addprefix ./,$(wildcard cmd/*))
+VERSION := 	$(shell cat .goxc.json | jq -c .PackageVersion | sed 's/"//g')
+SOURCES := 	$(shell find . -name "*.go")
+ARGS ?=		-V --local-user=local-user
 
 all: build
 
@@ -9,10 +10,10 @@ all: build
 build: $(notdir $(COMMANDS))
 
 run: build
-	./ssh2docker -V --local-user=local-user
+	./ssh2docker $(ARGS)
 
 $(notdir $(COMMANDS)): $(SOURCES)
-	go get -t ./...
+	@#go get -t ./...
 	gofmt -w $(PACKAGES) ./cmd/$@
 	go test -i $(PACKAGES) ./cmd/$@
 	go build -o $@ ./cmd/$@
