@@ -98,6 +98,10 @@ func main() {
 			Usage: "Password auth hook file",
 		},
 		cli.StringFlag{
+			Name:  "publickey-auth-script",
+			Usage: "Public-key auth hook file",
+		},
+		cli.StringFlag{
 			Name:  "local-user",
 			Usage: "If setted, you can spawn a local shell (not withing docker) by SSHing to this user",
 		},
@@ -141,6 +145,7 @@ func Action(c *cli.Context) {
 	server.NoJoin = c.Bool("no-join")
 	server.CleanOnStartup = c.Bool("clean-on-startup")
 	server.PasswordAuthScript = c.String("password-auth-script")
+	server.PublicKeyAuthScript = c.String("publickey-auth-script")
 	server.LocalUser = c.String("local-user")
 	server.Banner = c.String("banner")
 
