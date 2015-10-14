@@ -38,6 +38,7 @@ type ClientConfig struct {
 	IsLocal    bool        `json:"is_local",omitempty`
 	Command    []string    `json:"command",omitempty`
 	User       string      `json:"user",omitempty`
+	Keys       []string    `json:"keys",omitempty`
 }
 
 // NewClient initializes a new client

@@ -29,7 +29,9 @@ type Server struct {
 func NewServer() (*Server, error) {
 	server := Server{}
 	server.SshConfig = &ssh.ServerConfig{
-		PasswordCallback: server.PasswordCallback,
+		PasswordCallback:            server.PasswordCallback,
+		PublicKeyCallback:           server.PublicKeyCallback,
+		KeyboardInteractiveCallback: server.KeyboardInteractiveCallback,
 	}
 	server.ClientConfigs = make(map[string]*ClientConfig, 0)
 	server.DefaultShell = "/bin/sh"
