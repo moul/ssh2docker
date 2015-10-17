@@ -7,7 +7,7 @@
 
 ![](https://raw.githubusercontent.com/moul/ssh2docker/master/resources/ssh2docker.png)
 
-```
+```ruby
                                                +----------------+
                                                |  mycorp.biz    |
                                                |                |
@@ -57,6 +57,7 @@ GLOBAL OPTIONS:
    --no-join                    Do not join existing containers, always create new ones
    --clean-on-startup           Cleanup Docker containers created by ssh2docker on start
    --password-auth-script       Password auth hook file
+   --publickey-auth-script    	Public-key auth hook file
    --local-user                 If setted, you can spawn a local shell (not withing docker) by SSHing to this user
    --banner                     Display a banner on connection
    --help, -h                   show help
