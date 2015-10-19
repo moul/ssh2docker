@@ -161,6 +161,7 @@ $ docker run --privileged -v /var/lib/docker:/var/lib/docker -it --rm -p 2222:22
 
 ### master (unreleased)
 
+* Support of custom entrypoint ([#63](https://github.com/moul/ssh2docker/issues/63))
 * Support of public-key authentication ([#2](https://github.com/moul/ssh2docker/issues/2))
 * Handling custom environment variables, user and command in password script ([#57](https://github.com/moul/ssh2docker/issues/57))
 * Replacing "_" by "/" on default image name to handle ControlMaster on clients
