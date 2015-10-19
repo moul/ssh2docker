@@ -39,6 +39,7 @@ type ClientConfig struct {
 	Command    []string    `json:"command",omitempty`
 	User       string      `json:"user",omitempty`
 	Keys       []string    `json:"keys",omitempty`
+	EntryPoint string      `json:"entrypoint",omitempty`
 }
 
 // NewClient initializes a new client
@@ -165,7 +166,11 @@ func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 					// Opening Docker process
 					if existingContainer != "" {
 						// Attaching to an existing container
-						args := []string{"exec", "-it", existingContainer, c.Server.DefaultShell}
+						shell := c.Server.DefaultShell
+						if c.Config.EntryPoint != "" {
+							shell = c.Config.EntryPoint
+						}
+						args := []string{"exec", "-it", existingContainer, shell}
 						logrus.Debugf("Executing 'docker %s'", strings.Join(args, " "))
 						cmd = exec.Command("docker", args...)
 						cmd.Env = c.Config.Env.List()
@@ -176,6 +181,9 @@ func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 						args = append(args, "--label=ssh2docker", fmt.Sprintf("--label=user=%s", c.Config.RemoteUser), fmt.Sprintf("--label=image=%s", c.Config.ImageName))
 						if c.Config.User != "" {
 							args = append(args, "-u", c.Config.User)
+						}
+						if c.Config.EntryPoint != "" {
+							args = append(args, "--entrypoint", c.Config.EntryPoint)
 						}
 						args = append(args, c.Config.ImageName)
 						if c.Config.Command != nil {
