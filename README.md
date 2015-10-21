@@ -50,7 +50,7 @@ COMMANDS:
 GLOBAL OPTIONS:
    --verbose, -V                Enable verbose mode
    --bind, -b ":2222"           Listen to address
-   --host-key, -k "built-in"    Path or complete SSH host key to use
+   --host-key, -k "built-in"    Path or complete SSH host key to use, use 'system' for keys in /etc/ssh
    --allowed-images             List of allowed images, i.e: alpine,ubuntu:trusty,1cf3e6c
    --shell "/bin/sh"            Default shell
    --docker-run-args "-it --rm" 'docker run' arguments
@@ -161,6 +161,7 @@ $ docker run --privileged -v /var/lib/docker:/var/lib/docker -it --rm -p 2222:22
 
 ### master (unreleased)
 
+* Support of `--host-key=system` to use OpenSSH keys ([#45](https://github.com/moul/ssh2docker/issues/45))
 * Support of custom entrypoint ([#63](https://github.com/moul/ssh2docker/issues/63))
 * Support of public-key authentication ([#2](https://github.com/moul/ssh2docker/issues/2))
 * Handling custom environment variables, user and command in password script ([#57](https://github.com/moul/ssh2docker/issues/57))
