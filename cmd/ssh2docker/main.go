@@ -67,7 +67,7 @@ func main() {
 		},
 		cli.StringFlag{
 			Name:  "host-key, k",
-			Usage: "Path or complete SSH host key to use",
+			Usage: "Path or complete SSH host key to use, use 'system' for keys in /etc/ssh",
 			Value: "built-in",
 		},
 		cli.StringFlag{
@@ -151,8 +151,11 @@ func Action(c *cli.Context) {
 
 	// Register the SSH host key
 	hostKey := c.String("host-key")
-	if hostKey == "built-in" {
+	switch hostKey {
+	case "built-in":
 		hostKey = DefaultHostKey
+	case "system":
+		hostKey = "/etc/ssh/ssh_host_rsa_key"
 	}
 	err = server.AddHostKey(hostKey)
 	if err != nil {
