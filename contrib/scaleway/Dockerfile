@@ -1,5 +1,5 @@
 ## -*- docker-image-name: "scaleway/ssh2docker:latest" -*-
-FROM scaleway/docker:1.8.2
+FROM scaleway/docker:1.9.0
 
 
 # Prepare rootfs for image-builder
