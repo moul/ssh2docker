@@ -159,6 +159,12 @@ $ docker run --privileged -v /var/lib/docker:/var/lib/docker -it --rm -p 2222:22
 
 ## Changelog
 
+### master (unreleased)
+
+* No entry
+
+[full commits list](https://github.com/moul/ssh2docker/compare/v1.2.0...master)
+
 ### [v1.2.0](https://github.com/moul/ssh2docker/releases/tag/v1.2.0) (2015-11-22)
 
 * Support of `--host-key=system` to use OpenSSH keys ([#45](https://github.com/moul/ssh2docker/issues/45))
