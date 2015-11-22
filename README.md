@@ -159,7 +159,7 @@ $ docker run --privileged -v /var/lib/docker:/var/lib/docker -it --rm -p 2222:22
 
 ## Changelog
 
-### master (unreleased)
+### [v1.2.0](https://github.com/moul/ssh2docker/releases/tag/v1.2.0) (2015-11-22)
 
 * Support of `--host-key=system` to use OpenSSH keys ([#45](https://github.com/moul/ssh2docker/issues/45))
 * Support of custom entrypoint ([#63](https://github.com/moul/ssh2docker/issues/63))
@@ -171,7 +171,7 @@ $ docker run --privileged -v /var/lib/docker:/var/lib/docker -it --rm -p 2222:22
 * Support of `--local-user` option, to allow a specific user to be a local shell ([#44](https://github.com/moul/ssh2docker/issues/44))
 * Kill connection when exiting shell (ctrl+D) ([#43](https://github.com/moul/ssh2docker/issues/43))
 
-[full commits list](https://github.com/moul/ssh2docker/compare/v1.1.0...master)
+[full commits list](https://github.com/moul/ssh2docker/compare/v1.1.0...v1.2.0)
 
 ### [v1.1.0](https://github.com/moul/ssh2docker/releases/tag/v1.1.0) (2015-10-07)
 
