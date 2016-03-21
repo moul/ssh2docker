@@ -18,7 +18,7 @@ package oglemock
 import (
 	"errors"
 	"fmt"
-	"github.com/moul/ssh2docker/vendor/github.com/smartystreets/assertions/internal/oglematchers"
+	"github.com/smartystreets/assertions/internal/oglematchers"
 	"reflect"
 	"sync"
 )

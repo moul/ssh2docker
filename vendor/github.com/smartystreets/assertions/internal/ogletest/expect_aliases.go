@@ -15,7 +15,7 @@
 
 package ogletest
 
-import "github.com/moul/ssh2docker/vendor/github.com/smartystreets/assertions/internal/oglematchers"
+import "github.com/smartystreets/assertions/internal/oglematchers"
 
 // ExpectEq(e, a) is equivalent to ExpectThat(a, oglematchers.Equals(e)).
 func ExpectEq(expected, actual interface{}, errorParts ...interface{}) {

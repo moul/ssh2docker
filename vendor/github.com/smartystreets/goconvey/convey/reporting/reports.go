@@ -6,7 +6,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/moul/ssh2docker/vendor/github.com/smartystreets/goconvey/convey/gotest"
+	"github.com/smartystreets/goconvey/convey/gotest"
 )
 
 ////////////////// ScopeReport ////////////////////

@@ -3,7 +3,7 @@ package assertions
 import (
 	"fmt"
 
-	"github.com/moul/ssh2docker/vendor/github.com/smartystreets/assertions/internal/oglematchers"
+	"github.com/smartystreets/assertions/internal/oglematchers"
 )
 
 // ShouldBeGreaterThan receives exactly two parameters and ensures that the first is greater than the second.
