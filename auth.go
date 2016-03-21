@@ -7,8 +7,8 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/moul/ssh2docker/vendor/github.com/Sirupsen/logrus"
-	"github.com/moul/ssh2docker/vendor/golang.org/x/crypto/ssh"
+	"github.com/Sirupsen/logrus"
+	"golang.org/x/crypto/ssh"
 )
 
 // CheckConfig checks if the ClientConfig has access

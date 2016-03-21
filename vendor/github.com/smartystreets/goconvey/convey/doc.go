@@ -3,7 +3,7 @@
 // packages from this project as they serve internal purposes.
 package convey
 
-import "github.com/moul/ssh2docker/vendor/github.com/smartystreets/goconvey/convey/reporting"
+import "github.com/smartystreets/goconvey/convey/reporting"
 
 ////////////////////////////////// suite //////////////////////////////////
 

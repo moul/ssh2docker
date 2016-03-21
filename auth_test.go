@@ -3,7 +3,7 @@ package ssh2docker
 import (
 	"testing"
 
-	. "github.com/moul/ssh2docker/vendor/github.com/smartystreets/goconvey/convey"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestServer_CheckConfig(t *testing.T) {

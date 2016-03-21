@@ -153,6 +153,14 @@ func (t *handshakeTransport) readLoop() {
 		}
 		t.incoming <- p
 	}
+
+	// If we can't read, declare the writing part dead too.
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if t.writeError == nil {
+		t.writeError = t.readError
+	}
+	t.cond.Broadcast()
 }
 
 func (t *handshakeTransport) readOnePacket() ([]byte, error) {
@@ -270,7 +278,7 @@ func (t *handshakeTransport) writePacket(p []byte) error {
 	if t.writtenSinceKex > t.config.RekeyThreshold {
 		t.sendKexInitLocked()
 	}
-	for t.sentInitMsg != nil {
+	for t.sentInitMsg != nil && t.writeError == nil {
 		t.cond.Wait()
 	}
 	if t.writeError != nil {
@@ -324,9 +332,9 @@ func (t *handshakeTransport) enterKeyExchange(otherInitPacket []byte) error {
 		magics.serverKexInit = otherInitPacket
 	}
 
-	algs := findAgreedAlgorithms(clientInit, serverInit)
-	if algs == nil {
-		return errors.New("ssh: no common algorithms")
+	algs, err := findAgreedAlgorithms(clientInit, serverInit)
+	if err != nil {
+		return err
 	}
 
 	// We don't send FirstKexFollows, but we handle receiving it.

@@ -1,0 +1,51 @@
+{
+	"ImportPath": "github.com/moul/ssh2docker",
+	"GoVersion": "go1.5",
+	"Packages": [
+		"github.com/moul/ssh2docker",
+		"github.com/moul/ssh2docker/cmd/ssh2docker"
+	],
+	"Deps": [
+		{
+			"ImportPath": "github.com/Sirupsen/logrus",
+			"Comment": "v0.8.7-53-g446d1c1",
+			"Rev": "446d1c146faa8ed3f4218f056fcd165f6bcfda81"
+		},
+		{
+			"ImportPath": "github.com/codegangsta/cli",
+			"Comment": "1.2.0-187-gc31a797",
+			"Rev": "c31a7975863e7810c92e2e288a9ab074f9a88f29"
+		},
+		{
+			"ImportPath": "github.com/jtolds/gls",
+			"Rev": "9a4a02dbe491bef4bab3c24fd9f3087d6c4c6690"
+		},
+		{
+			"ImportPath": "github.com/kr/pty",
+			"Comment": "release.r56-28-g5cf931e",
+			"Rev": "5cf931ef8f76dccd0910001d74a58a7fca84a83d"
+		},
+		{
+			"ImportPath": "github.com/smartystreets/assertions",
+			"Comment": "1.5.0-409-g5de9043",
+			"Rev": "5de9043ec1a39cc97edc838ef7236538a55b30a4"
+		},
+		{
+			"ImportPath": "github.com/smartystreets/goconvey/convey",
+			"Comment": "1.6.0-9-ga2d5d78",
+			"Rev": "a2d5d788f3afbce0989463251ccc5492fad832df"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/curve25519",
+			"Rev": "f18420efc3b4f8e9f3d51f6bd2476e92c46260e9"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/ssh",
+			"Rev": "f18420efc3b4f8e9f3d51f6bd2476e92c46260e9"
+		},
+		{
+			"ImportPath": "golang.org/x/sys/unix",
+			"Rev": "833a04a10549a95dc34458c195cbad61bbb6cb4d"
+		}
+	]
+}

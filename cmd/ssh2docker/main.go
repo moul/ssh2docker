@@ -6,9 +6,9 @@ import (
 	"path"
 	"strings"
 
+	"github.com/Sirupsen/logrus"
+	"github.com/codegangsta/cli"
 	"github.com/moul/ssh2docker"
-	"github.com/moul/ssh2docker/vendor/github.com/Sirupsen/logrus"
-	"github.com/moul/ssh2docker/vendor/github.com/codegangsta/cli"
 )
 
 var VERSION string
