@@ -8,13 +8,13 @@
 ![](https://raw.githubusercontent.com/moul/ssh2docker/master/resources/ssh2docker.png)
 
 ```ruby
-┌────────────┐                                
-│bobby@laptop│                                
-└────────────┘                                
-       │                                      
-       └──ssh container1@mycorp.biz──┐        
-                                     ▼        
-                               ┌──────────┐   
+┌────────────┐
+│bobby@laptop│
+└────────────┘
+       │
+       └──ssh container1@mycorp.biz──┐
+                                     ▼
+                               ┌──────────┐
 ┌──────────────────────────────┤ssh2docker├──┐
 │                              └──────────┘  │
 │              docker exec -it       │       │
@@ -158,7 +158,7 @@ $ docker run --privileged -v /var/lib/docker:/var/lib/docker -it --rm -p 2222:22
 
 ### master (unreleased)
 
-* No entry
+* Support of `docker-run-args` in hook scripts ([#30](https://github.com/moul/ssh2docker/issues/30))
 
 [full commits list](https://github.com/moul/ssh2docker/compare/v1.2.0...master)
 
