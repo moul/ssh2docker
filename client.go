@@ -31,15 +31,16 @@ type Client struct {
 }
 
 type ClientConfig struct {
-	ImageName  string      `json:"image-name",omitempty`
-	RemoteUser string      `json:"remote-user",omitempty`
-	Allowed    bool        `json:"allowed",omitempty`
-	Env        Environment `json:"env",omitempty`
-	IsLocal    bool        `json:"is_local",omitempty`
-	Command    []string    `json:"command",omitempty`
-	User       string      `json:"user",omitempty`
-	Keys       []string    `json:"keys",omitempty`
-	EntryPoint string      `json:"entrypoint",omitempty`
+	ImageName     string      `json:"image-name",omitempty`
+	RemoteUser    string      `json:"remote-user",omitempty`
+	Allowed       bool        `json:"allowed",omitempty`
+	Env           Environment `json:"env",omitempty`
+	IsLocal       bool        `json:"is_local",omitempty`
+	Command       []string    `json:"command",omitempty`
+	DockerRunArgs []string    `json:"docker-run-args",omitempty`
+	User          string      `json:"user",omitempty`
+	Keys          []string    `json:"keys",omitempty`
+	EntryPoint    string      `json:"entrypoint",omitempty`
 }
 
 // NewClient initializes a new client
@@ -177,7 +178,11 @@ func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 					} else {
 						// Creating and attaching to a new container
 						args := []string{"run"}
-						args = append(args, c.Server.DockerRunArgs...)
+						if len(c.Config.DockerRunArgs) > 0 {
+							args = append(args, c.Config.DockerRunArgs...)
+						} else {
+							args = append(args, c.Server.DockerRunArgs...)
+						}
 						args = append(args, "--label=ssh2docker", fmt.Sprintf("--label=user=%s", c.Config.RemoteUser), fmt.Sprintf("--label=image=%s", c.Config.ImageName))
 						if c.Config.User != "" {
 							args = append(args, "-u", c.Config.User)
