@@ -33,16 +33,19 @@ type Client struct {
 }
 
 type ClientConfig struct {
-	ImageName     string                `json:"image-name",omitempty`
-	RemoteUser    string                `json:"remote-user",omitempty`
-	Allowed       bool                  `json:"allowed",omitempty`
-	Env           envhelper.Environment `json:"env",omitempty`
-	IsLocal       bool                  `json:"is_local",omitempty`
-	Command       []string              `json:"command",omitempty`
-	DockerRunArgs []string              `json:"docker-run-args",omitempty`
-	User          string                `json:"user",omitempty`
-	Keys          []string              `json:"keys",omitempty`
-	EntryPoint    string                `json:"entrypoint",omitempty`
+	ImageName              string                `json:"image-name",omitempty`
+	RemoteUser             string                `json:"remote-user",omitempty`
+	Allowed                bool                  `json:"allowed",omitempty`
+	Env                    envhelper.Environment `json:"env",omitempty`
+	IsLocal                bool                  `json:"is_local",omitempty`
+	Command                []string              `json:"command",omitempty`
+	DockerRunArgs          []string              `json:"docker-run-args",omitempty`
+	User                   string                `json:"user",omitempty`
+	Keys                   []string              `json:"keys",omitempty`
+	AuthenticationMethod   string                `json:"authentication-method",omitempty`
+	AuthenticationComment  string                `json:"authentication-coment",omitempty`
+	AuthenticationAttempts int                   `json:"authentication-attempts",omitempty`
+	EntryPoint             string                `json:"entrypoint",omitempty`
 }
 
 // NewClient initializes a new client
@@ -58,10 +61,13 @@ func NewClient(conn *ssh.ServerConn, chans <-chan ssh.NewChannel, reqs <-chan *s
 
 		// Default ClientConfig, will be overwritten if a hook is used
 		Config: &ClientConfig{
-			ImageName:  strings.Replace(conn.User(), "_", "/", -1),
-			RemoteUser: "anonymous",
-			Env:        envhelper.Environment{},
-			Command:    make([]string, 0),
+			ImageName:              strings.Replace(conn.User(), "_", "/", -1),
+			RemoteUser:             "anonymous",
+			AuthenticationMethod:   "noauth",
+			AuthenticationComment:  "",
+			AuthenticationAttempts: 0,
+			Env:     envhelper.Environment{},
+			Command: make([]string, 0),
 		},
 	}
 
@@ -73,9 +79,13 @@ func NewClient(conn *ssh.ServerConn, chans <-chan ssh.NewChannel, reqs <-chan *s
 		server.ClientConfigs[client.ClientID] = client.Config
 	}
 
+	client.Config = server.ClientConfigs[conn.RemoteAddr().String()]
+	client.Config.Env.ApplyDefaults()
+
 	clientCounter++
 
-	logrus.Infof("NewClient (%d): RemoteAddr=%q User=%q ClientVersion=%q", client.Idx, client.ClientID, conn.User(), fmt.Sprintf("%x", conn.ClientVersion()))
+	remoteAddr := strings.Split(client.ClientID, ":")
+	logrus.Infof("Accepted %s for %s from %s port %s ssh2: %s", client.Config.AuthenticationMethod, conn.User(), remoteAddr[0], remoteAddr[1], client.Config.AuthenticationComment)
 	return &client
 }
 
@@ -228,7 +238,7 @@ func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 				var once sync.Once
 				close := func() {
 					channel.Close()
-					logrus.Debug("session closed")
+					logrus.Infof("Received disconnect from %s: disconnected by user", c.ClientID)
 				}
 
 				go func() {

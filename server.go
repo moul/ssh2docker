@@ -71,12 +71,12 @@ func (s *Server) Handle(netConn net.Conn) error {
 	logrus.Debugf("Server.Handle netConn=%v", netConn)
 	// Initialize a Client object
 	conn, chans, reqs, err := ssh.NewServerConn(netConn, s.SshConfig)
+
 	if err != nil {
+		logrus.Infof("Received disconnect from %s: 11: Bye Bye [preauth]", netConn.RemoteAddr().String())
 		return err
 	}
 	client := NewClient(conn, chans, reqs, s)
-	client.Config = s.ClientConfigs[conn.RemoteAddr().String()]
-	client.Config.Env.ApplyDefaults()
 
 	// Handle requests
 	if err = client.HandleRequests(); err != nil {
