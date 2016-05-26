@@ -73,7 +73,7 @@ func NewClient(conn *ssh.ServerConn, chans <-chan ssh.NewChannel, reqs <-chan *s
 
 	clientCounter++
 
-	logrus.Infof("NewClient (%d): User=%q, ClientVersion=%q", client.Idx, conn.User(), fmt.Sprintf("%x", conn.ClientVersion()))
+	logrus.Infof("NewClient (%d): RemoteAddr=%q User=%q ClientVersion=%q", client.Idx, client.ClientID, conn.User(), fmt.Sprintf("%x", conn.ClientVersion()))
 	return &client
 }
 
