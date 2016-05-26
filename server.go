@@ -1,9 +1,13 @@
 package ssh2docker
 
 import (
+	"io/ioutil"
 	"net"
+	"os"
+	"strings"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/moul/ssh2docker/pkg/dockerhelper"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -48,7 +52,7 @@ func (s *Server) Init() error {
 	}
 
 	if s.CleanOnStartup {
-		err := DockerCleanup()
+		err := dockerhelper.DockerCleanup()
 		if err != nil {
 			logrus.Warnf("Failed to cleanup docker containers: %v", err)
 		}
@@ -83,5 +87,31 @@ func (s *Server) Handle(netConn net.Conn) error {
 	if err = client.HandleChannels(); err != nil {
 		return err
 	}
+	return nil
+}
+
+// AddHostKey parses/loads an ssh key and registers it to the server
+func (s *Server) AddHostKey(keystring string) error {
+	// Check if keystring is a key path or a key string
+	keypath := os.ExpandEnv(strings.Replace(keystring, "~", "$HOME", 2))
+	_, err := os.Stat(keypath)
+	var keybytes []byte
+	if err == nil {
+		keybytes, err = ioutil.ReadFile(keypath)
+		if err != nil {
+			return err
+		}
+	} else {
+		keybytes = []byte(keystring)
+	}
+
+	// Parse SSH priate key
+	hostkey, err := ssh.ParsePrivateKey(keybytes)
+	if err != nil {
+		return err
+	}
+
+	// Register key to the server
+	s.SshConfig.AddHostKey(hostkey)
 	return nil
 }

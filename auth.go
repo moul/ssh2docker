@@ -9,6 +9,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/mitchellh/go-homedir"
+	"github.com/moul/ssh2docker/pkg/envhelper"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -50,7 +51,7 @@ func (s *Server) PublicKeyCallback(conn ssh.ConnMetadata, key ssh.PublicKey) (*s
 			RemoteUser: username,
 			ImageName:  username,
 			Keys:       []string{},
-			Env:        make(Environment, 0),
+			Env:        make(envhelper.Environment, 0),
 		}
 	}
 	config = s.ClientConfigs[clientID]
@@ -70,7 +71,7 @@ func (s *Server) KeyboardInteractiveCallback(conn ssh.ConnMetadata, challenge ss
 			RemoteUser: username,
 			ImageName:  username,
 			Keys:       []string{},
-			Env:        make(Environment, 0),
+			Env:        make(envhelper.Environment, 0),
 		}
 	}
 	config = s.ClientConfigs[clientID]
@@ -123,7 +124,7 @@ func (s *Server) PasswordCallback(conn ssh.ConnMetadata, password []byte) (*ssh.
 			RemoteUser: username,
 			ImageName:  username,
 			Keys:       []string{},
-			Env:        make(Environment, 0),
+			Env:        make(envhelper.Environment, 0),
 		}
 	}
 	config = s.ClientConfigs[clientID]

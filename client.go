@@ -12,6 +12,8 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/kr/pty"
+	"github.com/moul/ssh2docker/pkg/envhelper"
+	"github.com/moul/ssh2docker/pkg/ttyhelper"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -31,16 +33,16 @@ type Client struct {
 }
 
 type ClientConfig struct {
-	ImageName     string      `json:"image-name",omitempty`
-	RemoteUser    string      `json:"remote-user",omitempty`
-	Allowed       bool        `json:"allowed",omitempty`
-	Env           Environment `json:"env",omitempty`
-	IsLocal       bool        `json:"is_local",omitempty`
-	Command       []string    `json:"command",omitempty`
-	DockerRunArgs []string    `json:"docker-run-args",omitempty`
-	User          string      `json:"user",omitempty`
-	Keys          []string    `json:"keys",omitempty`
-	EntryPoint    string      `json:"entrypoint",omitempty`
+	ImageName     string                `json:"image-name",omitempty`
+	RemoteUser    string                `json:"remote-user",omitempty`
+	Allowed       bool                  `json:"allowed",omitempty`
+	Env           envhelper.Environment `json:"env",omitempty`
+	IsLocal       bool                  `json:"is_local",omitempty`
+	Command       []string              `json:"command",omitempty`
+	DockerRunArgs []string              `json:"docker-run-args",omitempty`
+	User          string                `json:"user",omitempty`
+	Keys          []string              `json:"keys",omitempty`
+	EntryPoint    string                `json:"entrypoint",omitempty`
 }
 
 // NewClient initializes a new client
@@ -58,7 +60,7 @@ func NewClient(conn *ssh.ServerConn, chans <-chan ssh.NewChannel, reqs <-chan *s
 		Config: &ClientConfig{
 			ImageName:  strings.Replace(conn.User(), "_", "/", -1),
 			RemoteUser: "anonymous",
-			Env:        Environment{},
+			Env:        envhelper.Environment{},
 			Command:    make([]string, 0),
 		},
 	}
@@ -258,13 +260,13 @@ func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 				ok = true
 				termLen := req.Payload[3]
 				c.Config.Env["TERM"] = string(req.Payload[4 : termLen+4])
-				w, h := parseDims(req.Payload[termLen+4:])
-				SetWinsize(c.Pty.Fd(), w, h)
+				w, h := ttyhelper.ParseDims(req.Payload[termLen+4:])
+				ttyhelper.SetWinsize(c.Pty.Fd(), w, h)
 				logrus.Debugf("HandleChannelRequests.req pty-req: TERM=%q w=%q h=%q", c.Config.Env["TERM"], int(w), int(h))
 
 			case "window-change":
-				w, h := parseDims(req.Payload)
-				SetWinsize(c.Pty.Fd(), w, h)
+				w, h := ttyhelper.ParseDims(req.Payload)
+				ttyhelper.SetWinsize(c.Pty.Fd(), w, h)
 				continue
 
 			case "env":

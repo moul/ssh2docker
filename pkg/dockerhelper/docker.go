@@ -1,4 +1,4 @@
-package ssh2docker
+package dockerhelper
 
 import (
 	"os/exec"
