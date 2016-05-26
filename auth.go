@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/mitchellh/go-homedir"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -81,7 +82,7 @@ func (s *Server) KeyboardInteractiveCallback(conn ssh.ConnMetadata, challenge ss
 
 	if s.PublicKeyAuthScript != "" {
 		logrus.Debugf("%d keys received, trying to authenticate using hook script", len(config.Keys))
-		script, err := expandUser(s.PublicKeyAuthScript)
+		script, err := homedir.Expand(s.PublicKeyAuthScript)
 		if err != nil {
 			logrus.Warnf("Failed to expandUser: %v", err)
 			return nil, err
@@ -128,7 +129,7 @@ func (s *Server) PasswordCallback(conn ssh.ConnMetadata, password []byte) (*ssh.
 	config = s.ClientConfigs[clientID]
 
 	if s.PasswordAuthScript != "" {
-		script, err := expandUser(s.PasswordAuthScript)
+		script, err := homedir.Expand(s.PasswordAuthScript)
 		if err != nil {
 			logrus.Warnf("Failed to expandUser: %v", err)
 			return nil, err
