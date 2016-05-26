@@ -1,12 +1,14 @@
 package main
 
 import (
+	"log/syslog"
 	"net"
 	"os"
 	"path"
 	"strings"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus/hooks/syslog"
 	"github.com/codegangsta/cli"
 	"github.com/moul/ssh2docker"
 )
@@ -59,6 +61,10 @@ func main() {
 		cli.BoolFlag{
 			Name:  "verbose, V",
 			Usage: "Enable verbose mode",
+		},
+		cli.StringFlag{
+			Name:  "syslog-server",
+			Usage: "Configure a syslog server, i.e: udp://localhost:514",
 		},
 		cli.StringFlag{
 			Name:  "bind, b",
@@ -122,6 +128,16 @@ func hookBefore(c *cli.Context) error {
 		logrus.SetLevel(logrus.DebugLevel)
 	} else {
 		logrus.SetLevel(logrus.InfoLevel)
+	}
+
+	if c.String("syslog-server") != "" {
+		server := strings.Split(c.String("syslog-server"), "://")
+		hook, err := logrus_syslog.NewSyslogHook(server[0], server[1], syslog.LOG_INFO, "")
+		if err != nil {
+			logrus.Error("Unable to connect to syslog daemon")
+		} else {
+			logrus.AddHook(hook)
+		}
 	}
 	return nil
 }

@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/mitchellh/go-homedir"
+	"github.com/moul/ssh2docker/pkg/envhelper"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -46,10 +48,13 @@ func (s *Server) PublicKeyCallback(conn ssh.ConnMetadata, key ssh.PublicKey) (*s
 	config := s.ClientConfigs[clientID]
 	if config == nil {
 		s.ClientConfigs[clientID] = &ClientConfig{
-			RemoteUser: username,
-			ImageName:  username,
-			Keys:       []string{},
-			Env:        make(Environment, 0),
+			RemoteUser:             username,
+			ImageName:              username,
+			Keys:                   []string{},
+			AuthenticationMethod:   "noauth",
+			AuthenticationAttempts: 0,
+			AuthenticationComment:  "",
+			Env: make(envhelper.Environment, 0),
 		}
 	}
 	config = s.ClientConfigs[clientID]
@@ -61,15 +66,18 @@ func (s *Server) PublicKeyCallback(conn ssh.ConnMetadata, key ssh.PublicKey) (*s
 func (s *Server) KeyboardInteractiveCallback(conn ssh.ConnMetadata, challenge ssh.KeyboardInteractiveChallenge) (*ssh.Permissions, error) {
 	username := conn.User()
 	clientID := conn.RemoteAddr().String()
-	logrus.Debugf("KeyboardInteractiveCallback: %q %q", username, challenge)
+	logrus.Debugf("KeyboardInteractiveCallback: %q", username)
 
 	config := s.ClientConfigs[clientID]
 	if config == nil {
 		s.ClientConfigs[clientID] = &ClientConfig{
-			RemoteUser: username,
-			ImageName:  username,
-			Keys:       []string{},
-			Env:        make(Environment, 0),
+			RemoteUser:             username,
+			ImageName:              username,
+			Keys:                   []string{},
+			AuthenticationMethod:   "noauth",
+			AuthenticationAttempts: 0,
+			AuthenticationComment:  "",
+			Env: make(envhelper.Environment, 0),
 		}
 	}
 	config = s.ClientConfigs[clientID]
@@ -80,8 +88,9 @@ func (s *Server) KeyboardInteractiveCallback(conn ssh.ConnMetadata, challenge ss
 	}
 
 	if s.PublicKeyAuthScript != "" {
+		config.AuthenticationAttempts++
 		logrus.Debugf("%d keys received, trying to authenticate using hook script", len(config.Keys))
-		script, err := expandUser(s.PublicKeyAuthScript)
+		script, err := homedir.Expand(s.PublicKeyAuthScript)
 		if err != nil {
 			logrus.Warnf("Failed to expandUser: %v", err)
 			return nil, err
@@ -96,11 +105,18 @@ func (s *Server) KeyboardInteractiveCallback(conn ssh.ConnMetadata, challenge ss
 			return nil, err
 		}
 
-		err = json.Unmarshal(output, &config)
-		if err != nil {
+		if err = json.Unmarshal(output, &config); err != nil {
 			logrus.Warnf("Failed to unmarshal json %q: %v", string(output), err)
 			return nil, err
 		}
+
+		if err = s.CheckConfig(config); err != nil {
+			return nil, err
+		}
+
+		// success
+		config.AuthenticationMethod = "publickey"
+		return nil, nil
 	} else {
 		logrus.Debugf("%d keys received, but no hook script, continuing", len(config.Keys))
 	}
@@ -115,20 +131,26 @@ func (s *Server) PasswordCallback(conn ssh.ConnMetadata, password []byte) (*ssh.
 
 	logrus.Debugf("PasswordCallback: %q %q", username, password)
 
+	// map config in the memory
 	config := s.ClientConfigs[clientID]
 	if config == nil {
 		s.ClientConfigs[clientID] = &ClientConfig{
 			//Allowed: true,
-			RemoteUser: username,
-			ImageName:  username,
-			Keys:       []string{},
-			Env:        make(Environment, 0),
+			RemoteUser:             username,
+			ImageName:              username,
+			Keys:                   []string{},
+			AuthenticationMethod:   "noauth",
+			AuthenticationAttempts: 0,
+			AuthenticationComment:  "",
+			Env: make(envhelper.Environment, 0),
 		}
+		config = s.ClientConfigs[clientID]
 	}
-	config = s.ClientConfigs[clientID]
 
+	// if there is a password callback
 	if s.PasswordAuthScript != "" {
-		script, err := expandUser(s.PasswordAuthScript)
+		config.AuthenticationAttempts++
+		script, err := homedir.Expand(s.PasswordAuthScript)
 		if err != nil {
 			logrus.Warnf("Failed to expandUser: %v", err)
 			return nil, err
@@ -142,11 +164,18 @@ func (s *Server) PasswordCallback(conn ssh.ConnMetadata, password []byte) (*ssh.
 			return nil, err
 		}
 
-		err = json.Unmarshal(output, &config)
-		if err != nil {
+		if err = json.Unmarshal(output, &config); err != nil {
 			logrus.Warnf("Failed to unmarshal json %q: %v", string(output), err)
 			return nil, err
 		}
+
+		if err = s.CheckConfig(config); err != nil {
+			return nil, err
+		}
+
+		// success
+		config.AuthenticationMethod = "password"
+		return nil, nil
 	}
 
 	return nil, s.CheckConfig(config)

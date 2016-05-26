@@ -1,9 +1,13 @@
 package ssh2docker
 
 import (
+	"io/ioutil"
 	"net"
+	"os"
+	"strings"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/moul/ssh2docker/pkg/dockerhelper"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -47,8 +51,14 @@ func (s *Server) Init() error {
 		return nil
 	}
 
+	// disable password authentication
+	if s.PasswordAuthScript == "" && s.PublicKeyAuthScript != "" {
+		s.SshConfig.PasswordCallback = nil
+	}
+
+	// cleanup old containers
 	if s.CleanOnStartup {
-		err := DockerCleanup()
+		err := dockerhelper.DockerCleanup()
 		if err != nil {
 			logrus.Warnf("Failed to cleanup docker containers: %v", err)
 		}
@@ -67,12 +77,12 @@ func (s *Server) Handle(netConn net.Conn) error {
 	logrus.Debugf("Server.Handle netConn=%v", netConn)
 	// Initialize a Client object
 	conn, chans, reqs, err := ssh.NewServerConn(netConn, s.SshConfig)
+
 	if err != nil {
+		logrus.Infof("Received disconnect from %s: 11: Bye Bye [preauth]", netConn.RemoteAddr().String())
 		return err
 	}
 	client := NewClient(conn, chans, reqs, s)
-	client.Config = s.ClientConfigs[conn.RemoteAddr().String()]
-	client.Config.Env.ApplyDefaults()
 
 	// Handle requests
 	if err = client.HandleRequests(); err != nil {
@@ -83,5 +93,31 @@ func (s *Server) Handle(netConn net.Conn) error {
 	if err = client.HandleChannels(); err != nil {
 		return err
 	}
+	return nil
+}
+
+// AddHostKey parses/loads an ssh key and registers it to the server
+func (s *Server) AddHostKey(keystring string) error {
+	// Check if keystring is a key path or a key string
+	keypath := os.ExpandEnv(strings.Replace(keystring, "~", "$HOME", 2))
+	_, err := os.Stat(keypath)
+	var keybytes []byte
+	if err == nil {
+		keybytes, err = ioutil.ReadFile(keypath)
+		if err != nil {
+			return err
+		}
+	} else {
+		keybytes = []byte(keystring)
+	}
+
+	// Parse SSH priate key
+	hostkey, err := ssh.ParsePrivateKey(keybytes)
+	if err != nil {
+		return err
+	}
+
+	// Register key to the server
+	s.SshConfig.AddHostKey(hostkey)
 	return nil
 }
