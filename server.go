@@ -51,6 +51,12 @@ func (s *Server) Init() error {
 		return nil
 	}
 
+	// disable password authentication
+	if s.PasswordAuthScript == "" && s.PublicKeyAuthScript != "" {
+		s.SshConfig.PasswordCallback = nil
+	}
+
+	// cleanup old containers
 	if s.CleanOnStartup {
 		err := dockerhelper.DockerCleanup()
 		if err != nil {
