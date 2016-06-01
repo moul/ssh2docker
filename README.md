@@ -163,6 +163,7 @@ $ docker run --privileged -v /var/lib/docker:/var/lib/docker -it --rm -p 2222:22
 * Support of `--syslog-server` + refactored logs ([#71](https://github.com/moul/ssh2docker/issues/71))
 * Do not ask for a password if only `--publickey-auth-script` is present ([#72](https://github.com/moul/ssh2docker/issues/72))
 * Code refactor (split in modules), update examples, bump dependencies
+* Support of `--syslog-server=unix:///dev/log` ([#74](https://github.com/moul/ssh2docker/issues/74))
 
 [full commits list](https://github.com/moul/ssh2docker/compare/v1.2.0...master)
 

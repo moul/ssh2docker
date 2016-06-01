@@ -132,7 +132,15 @@ func hookBefore(c *cli.Context) error {
 
 	if c.String("syslog-server") != "" {
 		server := strings.Split(c.String("syslog-server"), "://")
-		hook, err := logrus_syslog.NewSyslogHook(server[0], server[1], syslog.LOG_INFO, "")
+
+		var hook *logrus_syslog.SyslogHook
+		var err error
+		if server[0] == "unix" {
+			hook, err = logrus_syslog.NewSyslogHook("", "", syslog.LOG_INFO, "")
+
+		} else {
+			hook, err = logrus_syslog.NewSyslogHook(server[0], server[1], syslog.LOG_INFO, "")
+		}
 		if err != nil {
 			logrus.Error("Unable to connect to syslog daemon")
 		} else {
