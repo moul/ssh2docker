@@ -20,12 +20,12 @@ type Server struct {
 	AllowedImages       []string
 	DefaultShell        string
 	DockerRunArgs       []string
-	NoJoin              bool
-	CleanOnStartup      bool
 	PasswordAuthScript  string
 	PublicKeyAuthScript string
 	LocalUser           string
 	Banner              string
+	NoJoin              bool
+	CleanOnStartup      bool
 
 	initialized bool
 }

@@ -33,19 +33,19 @@ type Client struct {
 }
 
 type ClientConfig struct {
-	ImageName              string                `json:"image-name",omitempty`
-	RemoteUser             string                `json:"remote-user",omitempty`
-	Allowed                bool                  `json:"allowed",omitempty`
-	Env                    envhelper.Environment `json:"env",omitempty`
-	IsLocal                bool                  `json:"is_local",omitempty`
-	Command                []string              `json:"command",omitempty`
-	DockerRunArgs          []string              `json:"docker-run-args",omitempty`
-	User                   string                `json:"user",omitempty`
-	Keys                   []string              `json:"keys",omitempty`
-	AuthenticationMethod   string                `json:"authentication-method",omitempty`
-	AuthenticationComment  string                `json:"authentication-coment",omitempty`
-	AuthenticationAttempts int                   `json:"authentication-attempts",omitempty`
-	EntryPoint             string                `json:"entrypoint",omitempty`
+	ImageName              string                `json:"image-name,omitempty"`
+	RemoteUser             string                `json:"remote-user,omitempty"`
+	Env                    envhelper.Environment `json:"env,omitempty"`
+	Command                []string              `json:"command,omitempty"`
+	DockerRunArgs          []string              `json:"docker-run-args,omitempty"`
+	User                   string                `json:"user,omitempty"`
+	Keys                   []string              `json:"keys,omitempty"`
+	AuthenticationMethod   string                `json:"authentication-method,omitempty"`
+	AuthenticationComment  string                `json:"authentication-coment,omitempty"`
+	EntryPoint             string                `json:"entrypoint,omitempty"`
+	AuthenticationAttempts int                   `json:"authentication-attempts,omitempty"`
+	Allowed                bool                  `json:"allowed,omitempty"`
+	IsLocal                bool                  `json:"is_local,omitempty"`
 }
 
 // NewClient initializes a new client
