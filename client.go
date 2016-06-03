@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/apex/log"
 	"github.com/kr/pty"
 	"github.com/moul/ssh2docker/pkg/envhelper"
 	"github.com/moul/ssh2docker/pkg/ttyhelper"
@@ -33,19 +33,19 @@ type Client struct {
 }
 
 type ClientConfig struct {
-	ImageName              string                `json:"image-name",omitempty`
-	RemoteUser             string                `json:"remote-user",omitempty`
-	Allowed                bool                  `json:"allowed",omitempty`
-	Env                    envhelper.Environment `json:"env",omitempty`
-	IsLocal                bool                  `json:"is_local",omitempty`
-	Command                []string              `json:"command",omitempty`
-	DockerRunArgs          []string              `json:"docker-run-args",omitempty`
-	User                   string                `json:"user",omitempty`
-	Keys                   []string              `json:"keys",omitempty`
-	AuthenticationMethod   string                `json:"authentication-method",omitempty`
-	AuthenticationComment  string                `json:"authentication-coment",omitempty`
-	AuthenticationAttempts int                   `json:"authentication-attempts",omitempty`
-	EntryPoint             string                `json:"entrypoint",omitempty`
+	ImageName              string                `json:"image-name,omitempty"`
+	RemoteUser             string                `json:"remote-user,omitempty"`
+	Env                    envhelper.Environment `json:"env,omitempty"`
+	Command                []string              `json:"command,omitempty"`
+	DockerRunArgs          []string              `json:"docker-run-args,omitempty"`
+	User                   string                `json:"user,omitempty"`
+	Keys                   []string              `json:"keys,omitempty"`
+	AuthenticationMethod   string                `json:"authentication-method,omitempty"`
+	AuthenticationComment  string                `json:"authentication-coment,omitempty"`
+	EntryPoint             string                `json:"entrypoint,omitempty"`
+	AuthenticationAttempts int                   `json:"authentication-attempts,omitempty"`
+	Allowed                bool                  `json:"allowed,omitempty"`
+	IsLocal                bool                  `json:"is_local,omitempty"`
 }
 
 // NewClient initializes a new client
@@ -85,7 +85,7 @@ func NewClient(conn *ssh.ServerConn, chans <-chan ssh.NewChannel, reqs <-chan *s
 	clientCounter++
 
 	remoteAddr := strings.Split(client.ClientID, ":")
-	logrus.Infof("Accepted %s for %s from %s port %s ssh2: %s", client.Config.AuthenticationMethod, conn.User(), remoteAddr[0], remoteAddr[1], client.Config.AuthenticationComment)
+	log.Infof("Accepted %s for %s from %s port %s ssh2: %s", client.Config.AuthenticationMethod, conn.User(), remoteAddr[0], remoteAddr[1], client.Config.AuthenticationComment)
 	return &client
 }
 
@@ -93,7 +93,7 @@ func NewClient(conn *ssh.ServerConn, chans <-chan ssh.NewChannel, reqs <-chan *s
 func (c *Client) HandleRequests() error {
 	go func(in <-chan *ssh.Request) {
 		for req := range in {
-			logrus.Debugf("HandleRequest: %v", req)
+			log.Debugf("HandleRequest: %v", req)
 			if req.WantReply {
 				req.Reply(false, nil)
 			}
@@ -115,23 +115,23 @@ func (c *Client) HandleChannels() error {
 // HandleChannel handles one SSH channel
 func (c *Client) HandleChannel(newChannel ssh.NewChannel) error {
 	if newChannel.ChannelType() != "session" {
-		logrus.Debugf("Unknown channel type: %s", newChannel.ChannelType())
+		log.Debugf("Unknown channel type: %s", newChannel.ChannelType())
 		newChannel.Reject(ssh.UnknownChannelType, "unknown channel type")
 		return nil
 	}
 
 	channel, requests, err := newChannel.Accept()
 	if err != nil {
-		logrus.Errorf("newChannel.Accept failed: %v", err)
+		log.Errorf("newChannel.Accept failed: %v", err)
 		return err
 	}
 	c.ChannelIdx++
-	logrus.Debugf("HandleChannel.channel (client=%d channel=%d): %v", c.Idx, c.ChannelIdx, channel)
+	log.Debugf("HandleChannel.channel (client=%d channel=%d): %v", c.Idx, c.ChannelIdx, channel)
 
-	logrus.Debug("Creating pty...")
+	log.Debug("Creating pty...")
 	f, tty, err := pty.Open()
 	if err != nil {
-		logrus.Errorf("pty.Open failed: %v", err)
+		log.Errorf("pty.Open failed: %v", err)
 		return nil
 	}
 	c.Tty = tty
@@ -151,7 +151,7 @@ func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 			ok := false
 			switch req.Type {
 			case "shell":
-				logrus.Debugf("HandleChannelRequests.req shell")
+				log.Debugf("HandleChannelRequests.req shell")
 				if len(req.Payload) != 0 {
 					break
 				}
@@ -170,7 +170,7 @@ func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 						cmd.Env = c.Config.Env.List()
 						buf, err := cmd.CombinedOutput()
 						if err != nil {
-							logrus.Warnf("docker ps ... failed: %v", err)
+							log.Warnf("docker ps ... failed: %v", err)
 							continue
 						}
 						existingContainer = strings.TrimSpace(string(buf))
@@ -184,7 +184,7 @@ func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 							shell = c.Config.EntryPoint
 						}
 						args := []string{"exec", "-it", existingContainer, shell}
-						logrus.Debugf("Executing 'docker %s'", strings.Join(args, " "))
+						log.Debugf("Executing 'docker %s'", strings.Join(args, " "))
 						cmd = exec.Command("docker", args...)
 						cmd.Env = c.Config.Env.List()
 					} else {
@@ -208,7 +208,7 @@ func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 						} else {
 							args = append(args, c.Server.DefaultShell)
 						}
-						logrus.Debugf("Executing 'docker %s'", strings.Join(args, " "))
+						log.Debugf("Executing 'docker %s'", strings.Join(args, " "))
 						cmd = exec.Command("docker", args...)
 						cmd.Env = c.Config.Env.List()
 					}
@@ -231,14 +231,14 @@ func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 
 				err = cmd.Start()
 				if err != nil {
-					logrus.Warnf("cmd.Start failed: %v", err)
+					log.Warnf("cmd.Start failed: %v", err)
 					continue
 				}
 
 				var once sync.Once
 				close := func() {
 					channel.Close()
-					logrus.Infof("Received disconnect from %s: disconnected by user", c.ClientID)
+					log.Infof("Received disconnect from %s: disconnected by user", c.ClientID)
 				}
 
 				go func() {
@@ -253,14 +253,14 @@ func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 
 				go func() {
 					if err := cmd.Wait(); err != nil {
-						logrus.Warnf("cmd.Wait failed: %v", err)
+						log.Warnf("cmd.Wait failed: %v", err)
 					}
 					once.Do(close)
 				}()
 
 			case "exec":
 				command := string(req.Payload)
-				logrus.Debugf("HandleChannelRequests.req exec: %q", command)
+				log.Debugf("HandleChannelRequests.req exec: %q", command)
 				ok = false
 
 				fmt.Fprintln(channel, "⚠️  ssh2docker: exec is not yet implemented. https://github.com/moul/ssh2docker/issues/51.")
@@ -272,7 +272,7 @@ func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 				c.Config.Env["TERM"] = string(req.Payload[4 : termLen+4])
 				w, h := ttyhelper.ParseDims(req.Payload[termLen+4:])
 				ttyhelper.SetWinsize(c.Pty.Fd(), w, h)
-				logrus.Debugf("HandleChannelRequests.req pty-req: TERM=%q w=%q h=%q", c.Config.Env["TERM"], int(w), int(h))
+				log.Debugf("HandleChannelRequests.req pty-req: TERM=%q w=%q h=%q", c.Config.Env["TERM"], int(w), int(h))
 
 			case "window-change":
 				w, h := ttyhelper.ParseDims(req.Payload)
@@ -284,16 +284,16 @@ func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 				key := string(req.Payload[4 : keyLen+4])
 				valueLen := req.Payload[keyLen+7]
 				value := string(req.Payload[keyLen+8 : keyLen+8+valueLen])
-				logrus.Debugf("HandleChannelRequets.req 'env': %s=%q", key, value)
+				log.Debugf("HandleChannelRequets.req 'env': %s=%q", key, value)
 				c.Config.Env[key] = value
 
 			default:
-				logrus.Debugf("Unhandled request type: %q: %v", req.Type, req)
+				log.Debugf("Unhandled request type: %q: %v", req.Type, req)
 			}
 
 			if req.WantReply {
 				if !ok {
-					logrus.Debugf("Declining %s request...", req.Type)
+					log.Debugf("Declining %s request...", req.Type)
 				}
 				req.Reply(ok, nil)
 			}

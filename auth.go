@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/apex/log"
 	"github.com/mitchellh/go-homedir"
 	"github.com/moul/ssh2docker/pkg/envhelper"
 	"golang.org/x/crypto/ssh"
@@ -16,7 +16,7 @@ import (
 // CheckConfig checks if the ClientConfig has access
 func (s *Server) CheckConfig(config *ClientConfig) error {
 	if !config.Allowed && (s.PasswordAuthScript != "" || s.PublicKeyAuthScript != "") {
-		logrus.Debugf("config.Allowed = false")
+		log.Debugf("config.Allowed = false")
 		return fmt.Errorf("Access not allowed")
 	}
 
@@ -29,7 +29,7 @@ func (s *Server) CheckConfig(config *ClientConfig) error {
 			}
 		}
 		if !allowed {
-			logrus.Warnf("Image is not allowed: %q", config.ImageName)
+			log.Warnf("Image is not allowed: %q", config.ImageName)
 			return fmt.Errorf("Image not allowed")
 		}
 	}
@@ -42,7 +42,7 @@ func (s *Server) PublicKeyCallback(conn ssh.ConnMetadata, key ssh.PublicKey) (*s
 	username := conn.User()
 	clientID := conn.RemoteAddr().String()
 	keyText := strings.TrimSpace(string(ssh.MarshalAuthorizedKey(key)))
-	logrus.Debugf("PublicKeyCallback: %q %q", username, keyText)
+	log.Debugf("PublicKeyCallback: %q %q", username, keyText)
 	// sessionID := conn.SessionID()
 
 	config := s.ClientConfigs[clientID]
@@ -66,7 +66,7 @@ func (s *Server) PublicKeyCallback(conn ssh.ConnMetadata, key ssh.PublicKey) (*s
 func (s *Server) KeyboardInteractiveCallback(conn ssh.ConnMetadata, challenge ssh.KeyboardInteractiveChallenge) (*ssh.Permissions, error) {
 	username := conn.User()
 	clientID := conn.RemoteAddr().String()
-	logrus.Debugf("KeyboardInteractiveCallback: %q", username)
+	log.Debugf("KeyboardInteractiveCallback: %q", username)
 
 	config := s.ClientConfigs[clientID]
 	if config == nil {
@@ -83,30 +83,30 @@ func (s *Server) KeyboardInteractiveCallback(conn ssh.ConnMetadata, challenge ss
 	config = s.ClientConfigs[clientID]
 
 	if len(config.Keys) == 0 {
-		logrus.Warnf("No user keys, continuing with password authentication")
+		log.Warnf("No user keys, continuing with password authentication")
 		return nil, s.CheckConfig(config)
 	}
 
 	if s.PublicKeyAuthScript != "" {
 		config.AuthenticationAttempts++
-		logrus.Debugf("%d keys received, trying to authenticate using hook script", len(config.Keys))
+		log.Debugf("%d keys received, trying to authenticate using hook script", len(config.Keys))
 		script, err := homedir.Expand(s.PublicKeyAuthScript)
 		if err != nil {
-			logrus.Warnf("Failed to expandUser: %v", err)
+			log.Warnf("Failed to expandUser: %v", err)
 			return nil, err
 		}
 		args := append([]string{username}, config.Keys...)
 		cmd := exec.Command(script, args...)
-		// FIXME: redirect stderr to logrus
+		// FIXME: redirect stderr to log
 		cmd.Stderr = os.Stderr
 		output, err := cmd.Output()
 		if err != nil {
-			logrus.Warnf("Failed to execute publickey-auth-script: %v", err)
+			log.Warnf("Failed to execute publickey-auth-script: %v", err)
 			return nil, err
 		}
 
 		if err = json.Unmarshal(output, &config); err != nil {
-			logrus.Warnf("Failed to unmarshal json %q: %v", string(output), err)
+			log.Warnf("Failed to unmarshal json %q: %v", string(output), err)
 			return nil, err
 		}
 
@@ -118,7 +118,7 @@ func (s *Server) KeyboardInteractiveCallback(conn ssh.ConnMetadata, challenge ss
 		config.AuthenticationMethod = "publickey"
 		return nil, nil
 	} else {
-		logrus.Debugf("%d keys received, but no hook script, continuing", len(config.Keys))
+		log.Debugf("%d keys received, but no hook script, continuing", len(config.Keys))
 	}
 
 	return nil, s.CheckConfig(config)
@@ -129,7 +129,7 @@ func (s *Server) PasswordCallback(conn ssh.ConnMetadata, password []byte) (*ssh.
 	username := conn.User()
 	clientID := conn.RemoteAddr().String()
 
-	logrus.Debugf("PasswordCallback: %q %q", username, password)
+	log.Debugf("PasswordCallback: %q %q", username, password)
 
 	// map config in the memory
 	config := s.ClientConfigs[clientID]
@@ -152,20 +152,20 @@ func (s *Server) PasswordCallback(conn ssh.ConnMetadata, password []byte) (*ssh.
 		config.AuthenticationAttempts++
 		script, err := homedir.Expand(s.PasswordAuthScript)
 		if err != nil {
-			logrus.Warnf("Failed to expandUser: %v", err)
+			log.Warnf("Failed to expandUser: %v", err)
 			return nil, err
 		}
 		cmd := exec.Command(script, username, string(password))
-		// FIXME: redirect stderr to logrus
+		// FIXME: redirect stderr to log
 		cmd.Stderr = os.Stderr
 		output, err := cmd.Output()
 		if err != nil {
-			logrus.Warnf("Failed to execute password-auth-script: %v", err)
+			log.Warnf("Failed to execute password-auth-script: %v", err)
 			return nil, err
 		}
 
 		if err = json.Unmarshal(output, &config); err != nil {
-			logrus.Warnf("Failed to unmarshal json %q: %v", string(output), err)
+			log.Warnf("Failed to unmarshal json %q: %v", string(output), err)
 			return nil, err
 		}
 

@@ -7,10 +7,12 @@ import (
 	"path"
 	"strings"
 
-	"github.com/Sirupsen/logrus"
-	"github.com/Sirupsen/logrus/hooks/syslog"
+	"github.com/apex/log"
+	"github.com/apex/log/handlers/multi"
+	"github.com/apex/log/handlers/text"
 	"github.com/codegangsta/cli"
 	"github.com/moul/ssh2docker"
+	"github.com/moul/ssh2docker/pkg/sysloghandler"
 )
 
 var VERSION string
@@ -123,28 +125,25 @@ func main() {
 }
 
 func hookBefore(c *cli.Context) error {
-	// logrus.SetOutput(os.Stderr)
+	level := log.InfoLevel
+	syslogLevel := syslog.LOG_INFO
 	if c.Bool("verbose") {
-		logrus.SetLevel(logrus.DebugLevel)
-	} else {
-		logrus.SetLevel(logrus.InfoLevel)
+		level = log.DebugLevel
+		syslogLevel = syslog.LOG_DEBUG
 	}
+	log.SetLevel(level)
+	log.SetHandler(text.New(os.Stderr))
 
 	if c.String("syslog-server") != "" {
 		server := strings.Split(c.String("syslog-server"), "://")
 
-		var hook *logrus_syslog.SyslogHook
-		var err error
 		if server[0] == "unix" {
-			hook, err = logrus_syslog.NewSyslogHook("", "", syslog.LOG_INFO, "")
-
+			log.SetHandler(multi.New(text.New(os.Stderr), sysloghandler.New("", "", syslogLevel, "")))
 		} else {
-			hook, err = logrus_syslog.NewSyslogHook(server[0], server[1], syslog.LOG_INFO, "")
-		}
-		if err != nil {
-			logrus.Error("Unable to connect to syslog daemon")
-		} else {
-			logrus.AddHook(hook)
+			if len(server) != 2 {
+				log.Fatal("invalid syslog parameter")
+			}
+			log.SetHandler(multi.New(text.New(os.Stderr), sysloghandler.New(server[0], server[1], syslogLevel, "")))
 		}
 	}
 	return nil
@@ -155,7 +154,7 @@ func Action(c *cli.Context) {
 	// Initialize the SSH server
 	server, err := ssh2docker.NewServer()
 	if err != nil {
-		logrus.Fatalf("Cannot create server: %v", err)
+		log.Fatalf("Cannot create server: %v", err)
 	}
 
 	// Restrict list of allowed images
@@ -183,27 +182,27 @@ func Action(c *cli.Context) {
 	}
 	err = server.AddHostKey(hostKey)
 	if err != nil {
-		logrus.Fatalf("Cannot add host key: %v", err)
+		log.Fatalf("Cannot add host key: %v", err)
 	}
 
 	// Bind TCP socket
 	bindAddress := c.String("bind")
 	listener, err := net.Listen("tcp", bindAddress)
 	if err != nil {
-		logrus.Fatalf("Failed to start listener on %q: %v", bindAddress, err)
+		log.Fatalf("Failed to start listener on %q: %v", bindAddress, err)
 	}
-	logrus.Infof("Listening on %q", bindAddress)
+	log.Infof("Listening on %q", bindAddress)
 
 	// Initialize server
 	if err = server.Init(); err != nil {
-		logrus.Fatalf("Failed to initialize the server: %v", err)
+		log.Fatalf("Failed to initialize the server: %v", err)
 	}
 
 	// Accept new clients
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			logrus.Error("Accept failed: %v", err)
+			log.Errorf("Accept failed: %v", err)
 			continue
 		}
 		go server.Handle(conn)

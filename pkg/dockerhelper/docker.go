@@ -4,7 +4,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/apex/log"
 )
 
 // DockerCleanup cleans all containers created by ssh2docker
@@ -16,7 +16,7 @@ func DockerCleanup() error {
 
 	for _, cid := range containers {
 		if err = DockerKill(cid); err != nil {
-			logrus.Warnf("Failed to kill container %q: %v", cid, err)
+			log.Warnf("Failed to kill container %q: %v", cid, err)
 		}
 	}
 
@@ -27,7 +27,7 @@ func DockerCleanup() error {
 
 	for _, cid := range containers {
 		if err = DockerRemove(cid); err != nil {
-			logrus.Warnf("Failed to remove container %q: %v", cid, err)
+			log.Warnf("Failed to remove container %q: %v", cid, err)
 		}
 	}
 
@@ -41,7 +41,7 @@ func DockerKill(containerID string) error {
 	if err != nil {
 		return err
 	}
-	logrus.Debugf("Killed container: %q", containerID)
+	log.Debugf("Killed container: %q", containerID)
 	return nil
 }
 
@@ -52,7 +52,7 @@ func DockerRemove(containerID string) error {
 	if err != nil {
 		return err
 	}
-	logrus.Debugf("Deleted container: %q", containerID)
+	log.Debugf("Deleted container: %q", containerID)
 	return nil
 }
 

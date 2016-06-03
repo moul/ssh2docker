@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/apex/log"
 	"github.com/moul/ssh2docker/pkg/dockerhelper"
 	"golang.org/x/crypto/ssh"
 )
@@ -20,12 +20,12 @@ type Server struct {
 	AllowedImages       []string
 	DefaultShell        string
 	DockerRunArgs       []string
-	NoJoin              bool
-	CleanOnStartup      bool
 	PasswordAuthScript  string
 	PublicKeyAuthScript string
 	LocalUser           string
 	Banner              string
+	NoJoin              bool
+	CleanOnStartup      bool
 
 	initialized bool
 }
@@ -60,7 +60,7 @@ func (s *Server) Init() error {
 	if s.CleanOnStartup {
 		err := dockerhelper.DockerCleanup()
 		if err != nil {
-			logrus.Warnf("Failed to cleanup docker containers: %v", err)
+			log.Warnf("Failed to cleanup docker containers: %v", err)
 		}
 	}
 	s.initialized = true
@@ -74,12 +74,12 @@ func (s *Server) Handle(netConn net.Conn) error {
 		return err
 	}
 
-	logrus.Debugf("Server.Handle netConn=%v", netConn)
+	log.Debugf("Server.Handle netConn=%v", netConn)
 	// Initialize a Client object
 	conn, chans, reqs, err := ssh.NewServerConn(netConn, s.SshConfig)
 
 	if err != nil {
-		logrus.Infof("Received disconnect from %s: 11: Bye Bye [preauth]", netConn.RemoteAddr().String())
+		log.Infof("Received disconnect from %s: 11: Bye Bye [preauth]", netConn.RemoteAddr().String())
 		return err
 	}
 	client := NewClient(conn, chans, reqs, s)
