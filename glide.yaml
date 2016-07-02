@@ -1,0 +1,37 @@
+package: github.com/moul/ssh2docker
+import:
+- package: github.com/apex/log
+  version: 560a983048f4a827311b7f1ea6cf31168887a0af
+  subpackages:
+  - handlers/multi
+  - handlers/text
+- package: github.com/codegangsta/cli
+  version: edb24d02aa3cea2319c33f2836d4a5133907fe4c
+- package: github.com/gopherjs/gopherjs
+  version: 78919e0ff9540aec8ec7ddf27fbf607ae41abc2f
+  subpackages:
+  - js
+- package: github.com/jtolds/gls
+  version: 8ddce2a84170772b95dd5d576c48d517b22cac63
+- package: github.com/kr/pty
+  version: 0467868096dbfab4b683e41dd7aaba1c12363233
+- package: github.com/mitchellh/go-homedir
+  version: 981ab348d865cf048eb7d17e78ac7192632d8415
+- package: github.com/smartystreets/assertions
+  version: 40711f7748186bbf9c99977cd89f21ce1a229447
+  subpackages:
+  - internal/go-render/render
+  - internal/oglematchers
+- package: github.com/smartystreets/goconvey
+  version: c53abc99456fa3402dd33c15ee51c3e545e04a3f
+  subpackages:
+  - convey
+  - convey/gotest
+  - convey/reporting
+- package: golang.org/x/crypto
+  version: 5bcd134fee4dd1475da17714aac19c0aa0142e2f
+  subpackages:
+  - curve25519
+  - ed25519
+  - ed25519/internal/edwards25519
+  - ssh
