@@ -12,7 +12,6 @@ REL_COMMANDS := $(subst $(GODIR),./,$(COMMANDS))
 REL_PACKAGES := $(subst $(GODIR),./,$(PACKAGES))
 GOENV ?=	GO15VENDOREXPERIMENT=1
 GO ?=		$(GOENV) go
-GODEP ?=	$(GOENV) godep
 USER ?=		$(shell whoami)
 
 
@@ -42,11 +41,6 @@ test:
 .PHONY: install
 install:
 	$(GO) install $(COMMANDS)
-
-
-.PHONY: godep-save
-godep-save:
-	$(GODEP) save $(PACKAGES) $(COMMANDS)
 
 
 .PHONY: clean
