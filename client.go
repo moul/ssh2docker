@@ -255,7 +255,7 @@ func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 				}
 				ok = true
 
-				entrypoint := c.Server.DefaultShell
+				entrypoint := ""
 				if c.Config.EntryPoint != "" {
 					entrypoint = c.Config.EntryPoint
 				}
@@ -263,6 +263,10 @@ func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 				var args []string
 				if c.Config.Command != nil {
 					args = c.Config.Command
+				}
+
+				if entrypoint == "" && len(args) == 0 {
+					args = []string{c.Server.DefaultShell}
 				}
 
 				c.runCommand(channel, entrypoint, args)
