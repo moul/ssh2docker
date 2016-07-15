@@ -45,21 +45,21 @@ COMMANDS:
    help, h	Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
-   --verbose, -V		Enable verbose mode
-   --syslog-server 		Configure a syslog server, i.e: udp://localhost:514
-   --bind, -b ":2222"		Listen to address
-   --host-key, -k "built-in"	Path or complete SSH host key to use, use 'system' for keys in /etc/ssh
-   --allowed-images 		List of allowed images, i.e: alpine,ubuntu:trusty,1cf3e6c
-   --shell "/bin/sh"		Default shell
-   --docker-run-args "-it --rm"	'docker run' arguments
-   --no-join			Do not join existing containers, always create new ones
-   --clean-on-startup		Cleanup Docker containers created by ssh2docker on start
-   --password-auth-script 	Password auth hook file
-   --publickey-auth-script 	Public-key auth hook file
-   --local-user 		If setted, you can spawn a local shell (not withing docker) by SSHing to this user
-   --banner 			Display a banner on connection
-   --help, -h			show help
-   --version, -v		print the version
+   --verbose, -V                 Enable verbose mode
+   --syslog-server               Configure a syslog server, i.e: udp://localhost:514
+   --bind, -b ":2222"            Listen to address
+   --host-key, -k "built-in"     Path or complete SSH host key to use, use 'system' for keys in /etc/ssh
+   --allowed-images              List of allowed images, i.e: alpine,ubuntu:trusty,1cf3e6c
+   --shell "/bin/sh"             DEFAULT shell
+   --docker-run-args "-it --rm"  'docker run' arguments
+   --no-join                     Do not join existing containers, always create new ones
+   --clean-on-startup            Cleanup Docker containers created by ssh2docker on start
+   --password-auth-script 	     Password auth hook file
+   --publickey-auth-script 	     Public-key auth hook file
+   --local-user 		         If setted, you can spawn a local shell (not withing docker) by SSHing to this user
+   --banner 			         Display a banner on connection
+   --help, -h			         show help
+   --version, -v		         print the version
 ```
 
 ## Example
@@ -159,6 +159,7 @@ $ docker run --privileged -v /var/lib/docker:/var/lib/docker -it --rm -p 2222:22
 
 ### master (unreleased)
 
+* Support of API hooks for password and public key authentication ([#80](https://github.com/moul/ssh2docker/issues/80))
 * Support of exec requests ([#51](https://github.com/moul/ssh2docker/issues/51))
 * Support of `docker-run-args` in hook scripts ([#30](https://github.com/moul/ssh2docker/issues/30))
 * Support of `--syslog-server` + refactored logs ([#71](https://github.com/moul/ssh2docker/issues/71))
