@@ -88,41 +88,61 @@ func (s *Server) KeyboardInteractiveCallback(conn ssh.ConnMetadata, challenge ss
 		return nil, s.CheckConfig(config)
 	}
 
-	if s.PublicKeyAuthScript != "" {
-		config.AuthenticationAttempts++
-		log.Debugf("%d keys received, trying to authenticate using hook script", len(config.Keys))
+	if s.PublicKeyAuthScript == "" {
+		log.Debugf("%d keys received, but no hook script, continuing", len(config.Keys))
+		return nil, s.CheckConfig(config)
+	}
+
+	config.AuthenticationAttempts++
+	log.Debugf("%d keys received, trying to authenticate using publickey hook", len(config.Keys))
+
+	var output []byte
+	switch {
+	case strings.HasPrefix(s.PublicKeyAuthScript, "http://"),
+		strings.HasPrefix(s.PublicKeyAuthScript, "https://"):
+		input := struct {
+			Username   string   `json:"username"`
+			Publickeys []string `json:"publickeys"`
+		}{
+			Username:   username,
+			Publickeys: config.Keys,
+		}
+		resp, body, errs := gorequest.New().Type("json").Post(s.PublicKeyAuthScript).Send(input).End()
+		if len(errs) > 0 {
+			return nil, fmt.Errorf("gorequest errs: %v", errs)
+		}
+		if resp.StatusCode != 200 {
+			return nil, fmt.Errorf("invalid status code: %d", resp.StatusCode)
+		}
+		output = []byte(body)
+	default:
 		script, err := homedir.Expand(s.PublicKeyAuthScript)
 		if err != nil {
 			log.Warnf("Failed to expandUser: %v", err)
 			return nil, err
 		}
-		args := append([]string{username}, config.Keys...)
-		cmd := exec.Command(script, args...)
+		cmd := exec.Command(script, append([]string{username}, config.Keys...)...)
 		// FIXME: redirect stderr to log
 		cmd.Stderr = os.Stderr
-		output, err := cmd.Output()
+		output, err = cmd.Output()
 		if err != nil {
 			log.Warnf("Failed to execute publickey-auth-script: %v", err)
 			return nil, err
 		}
-
-		if err = json.Unmarshal(output, &config); err != nil {
-			log.Warnf("Failed to unmarshal json %q: %v", string(output), err)
-			return nil, err
-		}
-
-		if err = s.CheckConfig(config); err != nil {
-			return nil, err
-		}
-
-		// success
-		config.AuthenticationMethod = "publickey"
-		return nil, nil
-	} else {
-		log.Debugf("%d keys received, but no hook script, continuing", len(config.Keys))
 	}
 
-	return nil, s.CheckConfig(config)
+	if err := json.Unmarshal(output, &config); err != nil {
+		log.Warnf("Failed to unmarshal json %q: %v", string(output), err)
+		return nil, err
+	}
+
+	if err := s.CheckConfig(config); err != nil {
+		return nil, err
+	}
+
+	// success
+	config.AuthenticationMethod = "publickey"
+	return nil, nil
 }
 
 // PasswordCallback is called when the user tries to authenticate using a password
