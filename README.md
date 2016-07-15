@@ -159,6 +159,7 @@ $ docker run --privileged -v /var/lib/docker:/var/lib/docker -it --rm -p 2222:22
 
 ### master (unreleased)
 
+* Support of exec requests ([#51](https://github.com/moul/ssh2docker/issues/51))
 * Support of `docker-run-args` in hook scripts ([#30](https://github.com/moul/ssh2docker/issues/30))
 * Support of `--syslog-server` + refactored logs ([#71](https://github.com/moul/ssh2docker/issues/71))
 * Do not ask for a password if only `--publickey-auth-script` is present ([#72](https://github.com/moul/ssh2docker/issues/72))

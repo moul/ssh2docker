@@ -8,7 +8,6 @@ import (
 	"strings"
 	"sync"
 	"syscall"
-	"time"
 
 	"github.com/apex/log"
 	"github.com/kr/pty"
@@ -142,6 +141,105 @@ func (c *Client) HandleChannel(newChannel ssh.NewChannel) error {
 	return nil
 }
 
+func (c *Client) runCommand(channel ssh.Channel, entrypoint string, command []string) {
+	var cmd *exec.Cmd
+	var err error
+
+	if c.Config.IsLocal {
+		cmd = exec.Command(entrypoint, command...)
+	} else {
+		// checking if a container already exists for this user
+		existingContainer := ""
+		if !c.Server.NoJoin {
+			cmd := exec.Command("docker", "ps", "--filter=label=ssh2docker", fmt.Sprintf("--filter=label=image=%s", c.Config.ImageName), fmt.Sprintf("--filter=label=user=%s", c.Config.RemoteUser), "--quiet", "--no-trunc")
+			cmd.Env = c.Config.Env.List()
+			buf, err := cmd.CombinedOutput()
+			if err != nil {
+				log.Warnf("docker ps ... failed: %v", err)
+				return
+			}
+			existingContainer = strings.TrimSpace(string(buf))
+		}
+
+		// Opening Docker process
+		if existingContainer != "" {
+			// Attaching to an existing container
+			args := []string{"exec", "-it", existingContainer}
+			if entrypoint != "" {
+				args = append(args, entrypoint)
+			}
+			args = append(args, command...)
+			log.Debugf("Executing 'docker %s'", strings.Join(args, " "))
+			cmd = exec.Command("docker", args...)
+			cmd.Env = c.Config.Env.List()
+		} else {
+			// Creating and attaching to a new container
+			args := []string{"run"}
+			if len(c.Config.DockerRunArgs) > 0 {
+				args = append(args, c.Config.DockerRunArgs...)
+			} else {
+				args = append(args, c.Server.DockerRunArgs...)
+			}
+			args = append(args, "--label=ssh2docker", fmt.Sprintf("--label=user=%s", c.Config.RemoteUser), fmt.Sprintf("--label=image=%s", c.Config.ImageName))
+			if c.Config.User != "" {
+				args = append(args, "-u", c.Config.User)
+			}
+			if entrypoint != "" {
+				args = append(args, "--entrypoint", entrypoint)
+			}
+			args = append(args, c.Config.ImageName)
+			args = append(args, command...)
+			log.Debugf("Executing 'docker %s'", strings.Join(args, " "))
+			cmd = exec.Command("docker", args...)
+			cmd.Env = c.Config.Env.List()
+		}
+	}
+
+	if c.Server.Banner != "" {
+		banner := c.Server.Banner
+		banner = strings.Replace(banner, "\r", "", -1)
+		banner = strings.Replace(banner, "\n", "\n\r", -1)
+		fmt.Fprintf(channel, "%s\n\r", banner)
+	}
+
+	cmd.Stdout = c.Tty
+	cmd.Stdin = c.Tty
+	cmd.Stderr = c.Tty
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Setctty: true,
+		Setsid:  true,
+	}
+
+	err = cmd.Start()
+	if err != nil {
+		log.Warnf("cmd.Start failed: %v", err)
+		return
+	}
+
+	var once sync.Once
+	close := func() {
+		channel.Close()
+		log.Infof("Received disconnect from %s: disconnected by user", c.ClientID)
+	}
+
+	go func() {
+		io.Copy(channel, c.Pty)
+		once.Do(close)
+	}()
+
+	go func() {
+		io.Copy(c.Pty, channel)
+		once.Do(close)
+	}()
+
+	go func() {
+		if err := cmd.Wait(); err != nil {
+			log.Warnf("cmd.Wait failed: %v", err)
+		}
+		once.Do(close)
+	}()
+}
+
 // HandleChannelRequests handles channel requests
 func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh.Request) {
 	go func(in <-chan *ssh.Request) {
@@ -157,114 +255,26 @@ func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 				}
 				ok = true
 
-				var cmd *exec.Cmd
-				var err error
-
-				if c.Config.IsLocal {
-					cmd = exec.Command("/bin/bash")
-				} else {
-					// checking if a container already exists for this user
-					existingContainer := ""
-					if !c.Server.NoJoin {
-						cmd := exec.Command("docker", "ps", "--filter=label=ssh2docker", fmt.Sprintf("--filter=label=image=%s", c.Config.ImageName), fmt.Sprintf("--filter=label=user=%s", c.Config.RemoteUser), "--quiet", "--no-trunc")
-						cmd.Env = c.Config.Env.List()
-						buf, err := cmd.CombinedOutput()
-						if err != nil {
-							log.Warnf("docker ps ... failed: %v", err)
-							continue
-						}
-						existingContainer = strings.TrimSpace(string(buf))
-					}
-
-					// Opening Docker process
-					if existingContainer != "" {
-						// Attaching to an existing container
-						shell := c.Server.DefaultShell
-						if c.Config.EntryPoint != "" {
-							shell = c.Config.EntryPoint
-						}
-						args := []string{"exec", "-it", existingContainer, shell}
-						log.Debugf("Executing 'docker %s'", strings.Join(args, " "))
-						cmd = exec.Command("docker", args...)
-						cmd.Env = c.Config.Env.List()
-					} else {
-						// Creating and attaching to a new container
-						args := []string{"run"}
-						if len(c.Config.DockerRunArgs) > 0 {
-							args = append(args, c.Config.DockerRunArgs...)
-						} else {
-							args = append(args, c.Server.DockerRunArgs...)
-						}
-						args = append(args, "--label=ssh2docker", fmt.Sprintf("--label=user=%s", c.Config.RemoteUser), fmt.Sprintf("--label=image=%s", c.Config.ImageName))
-						if c.Config.User != "" {
-							args = append(args, "-u", c.Config.User)
-						}
-						if c.Config.EntryPoint != "" {
-							args = append(args, "--entrypoint", c.Config.EntryPoint)
-						}
-						args = append(args, c.Config.ImageName)
-						if c.Config.Command != nil {
-							args = append(args, c.Config.Command...)
-						} else {
-							args = append(args, c.Server.DefaultShell)
-						}
-						log.Debugf("Executing 'docker %s'", strings.Join(args, " "))
-						cmd = exec.Command("docker", args...)
-						cmd.Env = c.Config.Env.List()
-					}
+				entrypoint := c.Server.DefaultShell
+				if c.Config.EntryPoint != "" {
+					entrypoint = c.Config.EntryPoint
 				}
 
-				if c.Server.Banner != "" {
-					banner := c.Server.Banner
-					banner = strings.Replace(banner, "\r", "", -1)
-					banner = strings.Replace(banner, "\n", "\n\r", -1)
-					fmt.Fprintf(channel, "%s\n\r", banner)
+				var args []string
+				if c.Config.Command != nil {
+					args = c.Config.Command
 				}
 
-				cmd.Stdout = c.Tty
-				cmd.Stdin = c.Tty
-				cmd.Stderr = c.Tty
-				cmd.SysProcAttr = &syscall.SysProcAttr{
-					Setctty: true,
-					Setsid:  true,
-				}
-
-				err = cmd.Start()
-				if err != nil {
-					log.Warnf("cmd.Start failed: %v", err)
-					continue
-				}
-
-				var once sync.Once
-				close := func() {
-					channel.Close()
-					log.Infof("Received disconnect from %s: disconnected by user", c.ClientID)
-				}
-
-				go func() {
-					io.Copy(channel, c.Pty)
-					once.Do(close)
-				}()
-
-				go func() {
-					io.Copy(c.Pty, channel)
-					once.Do(close)
-				}()
-
-				go func() {
-					if err := cmd.Wait(); err != nil {
-						log.Warnf("cmd.Wait failed: %v", err)
-					}
-					once.Do(close)
-				}()
+				c.runCommand(channel, entrypoint, args)
 
 			case "exec":
-				command := string(req.Payload)
+				command := string(req.Payload[4:])
 				log.Debugf("HandleChannelRequests.req exec: %q", command)
-				ok = false
+				ok = true
 
-				fmt.Fprintln(channel, "⚠️  ssh2docker: exec is not yet implemented. https://github.com/moul/ssh2docker/issues/51.")
-				time.Sleep(3 * time.Second)
+				// FIXME: use a shell lexer to split the command
+				args := strings.Split(command, " ")
+				c.runCommand(channel, c.Config.EntryPoint, args)
 
 			case "pty-req":
 				ok = true
