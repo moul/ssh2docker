@@ -1,0 +1,23 @@
+#!/bin/bash
+
+set -e
+
+PORT=${PORT:-8080}
+
+handle() {
+    echo 'HTTP/1.0 200 OK'
+    echo 'Content-Type: application/json'
+    echo
+    echo '{"allowed":true}'
+
+    input=$(cat)
+    echo "publickey-auth-api: $input" >&2
+}
+
+
+case $1 in
+    "bind")
+        (sleep 1; echo "Listening on port ${PORT}" >&2)
+        socat -T0.1 -v "tcp-l:${PORT},reuseaddr,fork,crlf" "system:'. $0 && handle',stderr"
+        ;;
+esac
