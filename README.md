@@ -159,6 +159,10 @@ $ docker run --privileged -v /var/lib/docker:/var/lib/docker -it --rm -p 2222:22
 
 ### master (unreleased)
 
+* Support of `docker-exec-args` in hook scripts and in CLI args
+* Sending environment variables to auth scripts
+* TTY is now dynamic ([@quentinperez](https://github.com/quentinperez))
+* Support of exec commands without tty, i.e: git-server, rsync, tftp, ...
 * Support of API hooks for password and public key authentication ([#80](https://github.com/moul/ssh2docker/issues/80))
 * Support of exec requests ([#51](https://github.com/moul/ssh2docker/issues/51))
 * Support of `docker-run-args` in hook scripts ([#30](https://github.com/moul/ssh2docker/issues/30))
