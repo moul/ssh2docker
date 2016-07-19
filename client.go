@@ -44,7 +44,8 @@ type ClientConfig struct {
 	EntryPoint             string                `json:"entrypoint,omitempty"`
 	AuthenticationAttempts int                   `json:"authentication-attempts,omitempty"`
 	Allowed                bool                  `json:"allowed,omitempty"`
-	IsLocal                bool                  `json:"is_local,omitempty"`
+	IsLocal                bool                  `json:"is-local,omitempty"`
+	UseTTY                 bool                  `json:"use-tty,omitempty"`
 }
 
 // NewClient initializes a new client
@@ -125,16 +126,14 @@ func (c *Client) HandleChannel(newChannel ssh.NewChannel) error {
 		return err
 	}
 	c.ChannelIdx++
-	log.Debugf("HandleChannel.channel (client=%d channel=%d): %v", c.Idx, c.ChannelIdx, channel)
+	log.Debugf("HandleChannel.channel (client=%d channel=%d)", c.Idx, c.ChannelIdx)
 
 	log.Debug("Creating pty...")
-	f, tty, err := pty.Open()
+	c.Pty, c.Tty, err = pty.Open()
 	if err != nil {
 		log.Errorf("pty.Open failed: %v", err)
 		return nil
 	}
-	c.Tty = tty
-	c.Pty = f
 
 	c.HandleChannelRequests(channel, requests)
 
@@ -145,13 +144,14 @@ func (c *Client) runCommand(channel ssh.Channel, entrypoint string, command []st
 	var cmd *exec.Cmd
 	var err error
 
+	defer channel.Close()
 	if c.Config.IsLocal {
 		cmd = exec.Command(entrypoint, command...)
 	} else {
 		// checking if a container already exists for this user
 		existingContainer := ""
 		if !c.Server.NoJoin {
-			cmd := exec.Command("docker", "ps", "--filter=label=ssh2docker", fmt.Sprintf("--filter=label=image=%s", c.Config.ImageName), fmt.Sprintf("--filter=label=user=%s", c.Config.RemoteUser), "--quiet", "--no-trunc")
+			cmd = exec.Command("docker", "ps", "--filter=label=ssh2docker", fmt.Sprintf("--filter=label=image=%s", c.Config.ImageName), fmt.Sprintf("--filter=label=user=%s", c.Config.RemoteUser), "--quiet", "--no-trunc")
 			cmd.Env = c.Config.Env.List()
 			buf, err := cmd.CombinedOutput()
 			if err != nil {
@@ -164,7 +164,10 @@ func (c *Client) runCommand(channel ssh.Channel, entrypoint string, command []st
 		// Opening Docker process
 		if existingContainer != "" {
 			// Attaching to an existing container
-			args := []string{"exec", "-it", existingContainer}
+			args := []string{"exec", "-i", existingContainer}
+			if c.Config.UseTTY {
+				args = []string{"exec", "-it", existingContainer}
+			}
 			if entrypoint != "" {
 				args = append(args, entrypoint)
 			}
@@ -202,11 +205,30 @@ func (c *Client) runCommand(channel ssh.Channel, entrypoint string, command []st
 		fmt.Fprintf(channel, "%s\n\r", banner)
 	}
 
-	cmd.Stdout = c.Tty
-	cmd.Stdin = c.Tty
-	cmd.Stderr = c.Tty
+	cmd.Stdout = channel
+	cmd.Stdin = channel
+	cmd.Stderr = channel
+	var wg sync.WaitGroup
+
+	if c.Config.UseTTY {
+		cmd.Stdout = c.Tty
+		cmd.Stdin = c.Tty
+		cmd.Stderr = c.Tty
+
+		wg.Add(1)
+		go func() {
+			io.Copy(channel, c.Pty)
+			wg.Done()
+		}()
+		wg.Add(1)
+		go func() {
+			io.Copy(c.Pty, channel)
+			wg.Done()
+		}()
+		defer wg.Wait()
+	}
 	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Setctty: true,
+		Setctty: c.Config.UseTTY,
 		Setsid:  true,
 	}
 
@@ -216,28 +238,10 @@ func (c *Client) runCommand(channel ssh.Channel, entrypoint string, command []st
 		return
 	}
 
-	var once sync.Once
-	close := func() {
-		channel.Close()
-		log.Infof("Received disconnect from %s: disconnected by user", c.ClientID)
+	if err := cmd.Wait(); err != nil {
+		log.Warnf("cmd.Wait failed: %v", err)
 	}
-
-	go func() {
-		io.Copy(channel, c.Pty)
-		once.Do(close)
-	}()
-
-	go func() {
-		io.Copy(c.Pty, channel)
-		once.Do(close)
-	}()
-
-	go func() {
-		if err := cmd.Wait(); err != nil {
-			log.Warnf("cmd.Wait failed: %v", err)
-		}
-		once.Do(close)
-	}()
+	log.Debugf("cmd.Wait done")
 }
 
 // HandleChannelRequests handles channel requests
@@ -282,6 +286,7 @@ func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 
 			case "pty-req":
 				ok = true
+				c.Config.UseTTY = true
 				termLen := req.Payload[3]
 				c.Config.Env["TERM"] = string(req.Payload[4 : termLen+4])
 				w, h := ttyhelper.ParseDims(req.Payload[termLen+4:])
