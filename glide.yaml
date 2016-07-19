@@ -36,3 +36,4 @@ import:
   - ed25519/internal/edwards25519
   - ssh
 - package: github.com/parnurzeal/gorequest
+- package: github.com/flynn/go-shlex

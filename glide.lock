@@ -1,5 +1,5 @@
-hash: d3edf74dfbf354e83ca50061d65c2e5df64d2b2fbc3cfc3cd121df5fe24be71e
-updated: 2016-07-15T14:53:29.697723845+02:00
+hash: 91b82ef32fbebae963b83fdb0ed307b315ae4ded62741bcfcbe72c51d47ed3cb
+updated: 2016-07-19T15:25:00.990459488+02:00
 imports:
 - name: github.com/apex/log
   version: 560a983048f4a827311b7f1ea6cf31168887a0af
@@ -8,6 +8,8 @@ imports:
   - handlers/text
 - name: github.com/codegangsta/cli
   version: edb24d02aa3cea2319c33f2836d4a5133907fe4c
+- name: github.com/flynn/go-shlex
+  version: 3f9db97f856818214da2e1057f8ad84803971cff
 - name: github.com/gopherjs/gopherjs
   version: 78919e0ff9540aec8ec7ddf27fbf607ae41abc2f
   subpackages:
@@ -18,10 +20,8 @@ imports:
   version: 0467868096dbfab4b683e41dd7aaba1c12363233
 - name: github.com/mitchellh/go-homedir
   version: 981ab348d865cf048eb7d17e78ac7192632d8415
-- name: github.com/moul/http2curl
-  version: b1479103caacaa39319f75e7f57fc545287fca0d
 - name: github.com/parnurzeal/gorequest
-  version: 6e8ad4ebdee4bec2934ed5afaaa1c7b877832a17
+  version: 045012d33ef41ea146c1b675df9296d0dc1a212d
 - name: github.com/smartystreets/assertions
   version: 40711f7748186bbf9c99977cd89f21ce1a229447
   subpackages:
@@ -40,8 +40,4 @@ imports:
   - ed25519
   - ed25519/internal/edwards25519
   - ssh
-- name: golang.org/x/net
-  version: a728288923b47049b2ce791836767ffbe964a5bd
-  subpackages:
-  - publicsuffix
 devImports: []
