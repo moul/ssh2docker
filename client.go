@@ -144,7 +144,6 @@ func (c *Client) runCommand(channel ssh.Channel, entrypoint string, command []st
 	var cmd *exec.Cmd
 	var err error
 
-	defer channel.Close()
 	if c.Config.IsLocal {
 		cmd = exec.Command(entrypoint, command...)
 	} else {
@@ -156,6 +155,7 @@ func (c *Client) runCommand(channel ssh.Channel, entrypoint string, command []st
 			buf, err := cmd.CombinedOutput()
 			if err != nil {
 				log.Warnf("docker ps ... failed: %v", err)
+				channel.Close()
 				return
 			}
 			existingContainer = strings.TrimSpace(string(buf))
@@ -209,7 +209,6 @@ func (c *Client) runCommand(channel ssh.Channel, entrypoint string, command []st
 	cmd.Stdin = channel
 	cmd.Stderr = channel
 	var wg sync.WaitGroup
-
 	if c.Config.UseTTY {
 		cmd.Stdout = c.Tty
 		cmd.Stdin = c.Tty
@@ -235,12 +234,14 @@ func (c *Client) runCommand(channel ssh.Channel, entrypoint string, command []st
 	err = cmd.Start()
 	if err != nil {
 		log.Warnf("cmd.Start failed: %v", err)
+		channel.Close()
 		return
 	}
 
 	if err := cmd.Wait(); err != nil {
 		log.Warnf("cmd.Wait failed: %v", err)
 	}
+	channel.Close()
 	log.Debugf("cmd.Wait done")
 }
 
