@@ -178,6 +178,9 @@ func (c *Client) runCommand(channel ssh.Channel, entrypoint string, command []st
 		} else {
 			// Creating and attaching to a new container
 			args := []string{"run"}
+			if c.Config.UseTTY {
+				args = append(args, "-t")
+			}
 			if len(c.Config.DockerRunArgs) > 0 {
 				args = append(args, c.Config.DockerRunArgs...)
 			} else {

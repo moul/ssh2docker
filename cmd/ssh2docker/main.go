@@ -91,7 +91,7 @@ func main() {
 		cli.StringFlag{
 			Name:  "docker-run-args",
 			Usage: "'docker run' arguments",
-			Value: "-it --rm",
+			Value: "-i --rm",
 		},
 		cli.BoolFlag{
 			Name:  "no-join",

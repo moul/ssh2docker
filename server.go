@@ -40,7 +40,7 @@ func NewServer() (*Server, error) {
 	}
 	server.ClientConfigs = make(map[string]*ClientConfig, 0)
 	server.DefaultShell = "/bin/sh"
-	server.DockerRunArgs = []string{"-it", "--rm"}
+	server.DockerRunArgs = []string{"-i", "--rm"}
 	return &server, nil
 }
 
