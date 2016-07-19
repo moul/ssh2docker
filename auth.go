@@ -122,6 +122,7 @@ func (s *Server) KeyboardInteractiveCallback(conn ssh.ConnMetadata, challenge ss
 			return nil, err
 		}
 		cmd := exec.Command(script, append([]string{username}, config.Keys...)...)
+		cmd.Env = config.Env.List()
 		// FIXME: redirect stderr to log
 		cmd.Stderr = os.Stderr
 		output, err = cmd.Output()
@@ -201,6 +202,7 @@ func (s *Server) PasswordCallback(conn ssh.ConnMetadata, password []byte) (*ssh.
 			return nil, err
 		}
 		cmd := exec.Command(script, username, string(password))
+		cmd.Env = config.Env.List()
 		// FIXME: redirect stderr to log
 		cmd.Stderr = os.Stderr
 		output, err = cmd.Output()
