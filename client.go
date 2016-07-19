@@ -1,6 +1,7 @@
 package ssh2docker
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -8,8 +9,10 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	"text/template"
 
 	"github.com/apex/log"
+	"github.com/flynn/go-shlex"
 	"github.com/kr/pty"
 	"github.com/moul/ssh2docker/pkg/envhelper"
 	"github.com/moul/ssh2docker/pkg/ttyhelper"
@@ -37,6 +40,7 @@ type ClientConfig struct {
 	Env                    envhelper.Environment `json:"env,omitempty"`
 	Command                []string              `json:"command,omitempty"`
 	DockerRunArgs          []string              `json:"docker-run-args,omitempty"`
+	DockerExecArgs         []string              `json:"docker-exec-args,omitempty"`
 	User                   string                `json:"user,omitempty"`
 	Keys                   []string              `json:"keys,omitempty"`
 	AuthenticationMethod   string                `json:"authentication-method,omitempty"`
@@ -140,6 +144,31 @@ func (c *Client) HandleChannel(newChannel ssh.NewChannel) error {
 	return nil
 }
 
+func (c *Client) alterArg(arg string) (string, error) {
+	tmpl, err := template.New("run-args").Parse(arg)
+	if err != nil {
+		return "", err
+	}
+
+	var buff bytes.Buffer
+	if err := tmpl.Execute(&buff, c.Config); err != nil {
+		return "", err
+	}
+
+	return buff.String(), nil
+}
+
+func (c *Client) alterArgs(args []string) error {
+	for idx, arg := range args {
+		newArg, err := c.alterArg(arg)
+		if err != nil {
+			return err
+		}
+		args[idx] = newArg
+	}
+	return nil
+}
+
 func (c *Client) runCommand(channel ssh.Channel, entrypoint string, command []string) {
 	var cmd *exec.Cmd
 	var err error
@@ -164,10 +193,28 @@ func (c *Client) runCommand(channel ssh.Channel, entrypoint string, command []st
 		// Opening Docker process
 		if existingContainer != "" {
 			// Attaching to an existing container
-			args := []string{"exec", "-i", existingContainer}
-			if c.Config.UseTTY {
-				args = []string{"exec", "-it", existingContainer}
+			args := []string{"exec"}
+			if len(c.Config.DockerExecArgs) > 0 {
+				args = append(args, c.Config.DockerExecArgs...)
+				if err := c.alterArgs(args); err != nil {
+					log.Errorf("Failed to execute template on args: %v", err)
+					return
+				}
+			} else {
+				inlineExec, err := c.alterArg(c.Server.DockerExecArgsInline)
+				if err != nil {
+					log.Errorf("Failed to execute template on arg: %v", err)
+					return
+				}
+				execArgs, err := shlex.Split(inlineExec)
+				if err != nil {
+					log.Errorf("Failed to split arg %q: %v", inlineExec, err)
+					return
+				}
+				args = append(args, execArgs...)
 			}
+
+			args = append(args, existingContainer)
 			if entrypoint != "" {
 				args = append(args, entrypoint)
 			}
@@ -178,14 +225,26 @@ func (c *Client) runCommand(channel ssh.Channel, entrypoint string, command []st
 		} else {
 			// Creating and attaching to a new container
 			args := []string{"run"}
-			if c.Config.UseTTY {
-				args = append(args, "-t")
-			}
 			if len(c.Config.DockerRunArgs) > 0 {
 				args = append(args, c.Config.DockerRunArgs...)
+				if err := c.alterArgs(args); err != nil {
+					log.Errorf("Failed to execute template on args: %v", err)
+					return
+				}
 			} else {
-				args = append(args, c.Server.DockerRunArgs...)
+				inlineRun, err := c.alterArg(c.Server.DockerRunArgsInline)
+				if err != nil {
+					log.Errorf("Failed to execute template on arg: %v", err)
+					return
+				}
+				runArgs, err := shlex.Split(inlineRun)
+				if err != nil {
+					log.Errorf("Failed to split arg %q: %v", inlineRun, err)
+					return
+				}
+				args = append(args, runArgs...)
 			}
+
 			args = append(args, "--label=ssh2docker", fmt.Sprintf("--label=user=%s", c.Config.RemoteUser), fmt.Sprintf("--label=image=%s", c.Config.ImageName))
 			if c.Config.User != "" {
 				args = append(args, "-u", c.Config.User)
@@ -193,6 +252,7 @@ func (c *Client) runCommand(channel ssh.Channel, entrypoint string, command []st
 			if entrypoint != "" {
 				args = append(args, "--entrypoint", entrypoint)
 			}
+
 			args = append(args, c.Config.ImageName)
 			args = append(args, command...)
 			log.Debugf("Executing 'docker %s'", strings.Join(args, " "))
@@ -284,8 +344,10 @@ func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 				log.Debugf("HandleChannelRequests.req exec: %q", command)
 				ok = true
 
-				// FIXME: use a shell lexer to split the command
-				args := strings.Split(command, " ")
+				args, err := shlex.Split(command)
+				if err != nil {
+					log.Errorf("Failed to parse command %q: %v", command, args)
+				}
 				c.runCommand(channel, c.Config.EntryPoint, args)
 
 			case "pty-req":
@@ -293,6 +355,7 @@ func (c *Client) HandleChannelRequests(channel ssh.Channel, requests <-chan *ssh
 				c.Config.UseTTY = true
 				termLen := req.Payload[3]
 				c.Config.Env["TERM"] = string(req.Payload[4 : termLen+4])
+				c.Config.Env["USE_TTY"] = "1"
 				w, h := ttyhelper.ParseDims(req.Payload[termLen+4:])
 				ttyhelper.SetWinsize(c.Pty.Fd(), w, h)
 				log.Debugf("HandleChannelRequests.req pty-req: TERM=%q w=%q h=%q", c.Config.Env["TERM"], int(w), int(h))

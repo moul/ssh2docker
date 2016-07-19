@@ -91,7 +91,12 @@ func main() {
 		cli.StringFlag{
 			Name:  "docker-run-args",
 			Usage: "'docker run' arguments",
-			Value: "-i --rm",
+			Value: "-i {{if .UseTTY}} -t {{end}} --rm",
+		},
+		cli.StringFlag{
+			Name:  "docker-exec-args",
+			Usage: "'docker exec' arguments",
+			Value: "-i {{if .UseTTY}} -t {{end}}",
 		},
 		cli.BoolFlag{
 			Name:  "no-join",
@@ -164,7 +169,8 @@ func Action(c *cli.Context) {
 
 	// Configure server
 	server.DefaultShell = c.String("shell")
-	server.DockerRunArgs = strings.Split(c.String("docker-run-args"), " ")
+	server.DockerRunArgsInline = c.String("docker-run-args")
+	server.DockerExecArgsInline = c.String("docker-exec-args")
 	server.NoJoin = c.Bool("no-join")
 	server.CleanOnStartup = c.Bool("clean-on-startup")
 	server.PasswordAuthScript = c.String("password-auth-script")

@@ -17,15 +17,16 @@ type Server struct {
 	// Clients   map[string]Client
 	ClientConfigs map[string]*ClientConfig
 
-	AllowedImages       []string
-	DefaultShell        string
-	DockerRunArgs       []string
-	PasswordAuthScript  string
-	PublicKeyAuthScript string
-	LocalUser           string
-	Banner              string
-	NoJoin              bool
-	CleanOnStartup      bool
+	AllowedImages        []string
+	DefaultShell         string
+	DockerRunArgsInline  string
+	DockerExecArgsInline string
+	PasswordAuthScript   string
+	PublicKeyAuthScript  string
+	LocalUser            string
+	Banner               string
+	NoJoin               bool
+	CleanOnStartup       bool
 
 	initialized bool
 }
@@ -40,7 +41,6 @@ func NewServer() (*Server, error) {
 	}
 	server.ClientConfigs = make(map[string]*ClientConfig, 0)
 	server.DefaultShell = "/bin/sh"
-	server.DockerRunArgs = []string{"-i", "--rm"}
 	return &server, nil
 }
 
