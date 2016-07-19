@@ -74,6 +74,10 @@ profile.out:	$(SOURCES)
 	mv profile.out.tmp profile.out
 
 
+docker:
+	docker build -t moul/ssh2docker .
+
+
 .PHONY: docker-build
 docker-build:
 	go get github.com/laher/goxc
