@@ -1,5 +1,7 @@
 # ssh2docker
-:wrench: SSH server that creates a Docker container per connection (chroot++)
+:wrench: SSH server that can create new Docker containers and/or join existing ones, with session, and dynamic configuration support 
+
+> SSH chroot with steroids
 
 [![Build Status](https://travis-ci.org/moul/ssh2docker.svg?branch=master)](https://travis-ci.org/moul/ssh2docker)
 [![GoDoc](https://godoc.org/github.com/moul/ssh2docker?status.svg)](https://godoc.org/github.com/moul/ssh2docker)
