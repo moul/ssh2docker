@@ -1,5 +1,5 @@
 hash: 91b82ef32fbebae963b83fdb0ed307b315ae4ded62741bcfcbe72c51d47ed3cb
-updated: 2016-07-19T15:25:00.990459488+02:00
+updated: 2017-01-21T19:18:34.874358383+01:00
 imports:
 - name: github.com/apex/log
   version: 560a983048f4a827311b7f1ea6cf31168887a0af
@@ -20,8 +20,10 @@ imports:
   version: 0467868096dbfab4b683e41dd7aaba1c12363233
 - name: github.com/mitchellh/go-homedir
   version: 981ab348d865cf048eb7d17e78ac7192632d8415
+- name: github.com/moul/http2curl
+  version: 4e24498b31dba4683efb9d35c1c8a91e2eda28c8
 - name: github.com/parnurzeal/gorequest
-  version: 045012d33ef41ea146c1b675df9296d0dc1a212d
+  version: f441e24175ffc865a6354b65375e537201c51382
 - name: github.com/smartystreets/assertions
   version: 40711f7748186bbf9c99977cd89f21ce1a229447
   subpackages:
@@ -40,4 +42,8 @@ imports:
   - ed25519
   - ed25519/internal/edwards25519
   - ssh
-devImports: []
+- name: golang.org/x/net
+  version: f2499483f923065a842d38eb4c7f1927e6fc6e6d
+  subpackages:
+  - publicsuffix
+testImports: []
