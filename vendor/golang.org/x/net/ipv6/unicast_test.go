@@ -1,4 +1,4 @@
-// Copyright 2013 The Go Authors. All rights reserved.
+// Copyright 2013 The Go Authors.  All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -20,7 +20,7 @@ import (
 
 func TestPacketConnReadWriteUnicastUDP(t *testing.T) {
 	switch runtime.GOOS {
-	case "nacl", "plan9", "windows":
+	case "nacl", "plan9", "solaris", "windows":
 		t.Skipf("not supported on %s", runtime.GOOS)
 	}
 	if !supportsIPv6 {
@@ -71,17 +71,19 @@ func TestPacketConnReadWriteUnicastUDP(t *testing.T) {
 		if err := p.SetReadDeadline(time.Now().Add(100 * time.Millisecond)); err != nil {
 			t.Fatal(err)
 		}
-		if n, _, _, err := p.ReadFrom(rb); err != nil {
+		if n, cm, _, err := p.ReadFrom(rb); err != nil {
 			t.Fatal(err)
 		} else if !bytes.Equal(rb[:n], wb) {
 			t.Fatalf("got %v; want %v", rb[:n], wb)
+		} else {
+			t.Logf("rcvd cmsg: %v", cm)
 		}
 	}
 }
 
 func TestPacketConnReadWriteUnicastICMP(t *testing.T) {
 	switch runtime.GOOS {
-	case "nacl", "plan9", "windows":
+	case "nacl", "plan9", "solaris", "windows":
 		t.Skipf("not supported on %s", runtime.GOOS)
 	}
 	if !supportsIPv6 {
@@ -127,11 +129,7 @@ func TestPacketConnReadWriteUnicastICMP(t *testing.T) {
 		if toggle {
 			psh = nil
 			if err := p.SetChecksum(true, 2); err != nil {
-				// Solaris never allows to modify
-				// ICMP properties.
-				if runtime.GOOS != "solaris" {
-					t.Fatal(err)
-				}
+				t.Fatal(err)
 			}
 		} else {
 			psh = pshicmp
@@ -168,7 +166,7 @@ func TestPacketConnReadWriteUnicastICMP(t *testing.T) {
 		if err := p.SetReadDeadline(time.Now().Add(100 * time.Millisecond)); err != nil {
 			t.Fatal(err)
 		}
-		if n, _, _, err := p.ReadFrom(rb); err != nil {
+		if n, cm, _, err := p.ReadFrom(rb); err != nil {
 			switch runtime.GOOS {
 			case "darwin": // older darwin kernels have some limitation on receiving icmp packet through raw socket
 				t.Logf("not supported on %s", runtime.GOOS)
@@ -176,6 +174,7 @@ func TestPacketConnReadWriteUnicastICMP(t *testing.T) {
 			}
 			t.Fatal(err)
 		} else {
+			t.Logf("rcvd cmsg: %v", cm)
 			if m, err := icmp.ParseMessage(iana.ProtocolIPv6ICMP, rb[:n]); err != nil {
 				t.Fatal(err)
 			} else if m.Type != ipv6.ICMPTypeEchoReply || m.Code != 0 {

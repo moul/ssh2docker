@@ -1,4 +1,4 @@
-// Copyright 2012 The Go Authors. All rights reserved.
+// Copyright 2012 The Go Authors.  All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -98,10 +98,12 @@ func TestPacketConnReadWriteMulticastUDP(t *testing.T) {
 				t.Fatalf("got %v; want %v", n, len(wb))
 			}
 			rb := make([]byte, 128)
-			if n, _, _, err := p.ReadFrom(rb); err != nil {
+			if n, cm, _, err := p.ReadFrom(rb); err != nil {
 				t.Fatal(err)
 			} else if !bytes.Equal(rb[:n], wb) {
 				t.Fatalf("got %v; want %v", rb[:n], wb)
+			} else {
+				t.Logf("rcvd cmsg: %v", cm)
 			}
 		}
 	}
@@ -166,11 +168,7 @@ func TestPacketConnReadWriteMulticastICMP(t *testing.T) {
 		if _, err := p.MulticastLoopback(); err != nil {
 			t.Fatal(err)
 		}
-		cf := ipv4.FlagDst | ipv4.FlagInterface
-		if runtime.GOOS != "solaris" {
-			// Solaris never allows to modify ICMP properties.
-			cf |= ipv4.FlagTTL
-		}
+		cf := ipv4.FlagTTL | ipv4.FlagDst | ipv4.FlagInterface
 
 		for i, toggle := range []bool{true, false, true} {
 			wb, err := (&icmp.Message{
@@ -200,9 +198,10 @@ func TestPacketConnReadWriteMulticastICMP(t *testing.T) {
 				t.Fatalf("got %v; want %v", n, len(wb))
 			}
 			rb := make([]byte, 128)
-			if n, _, _, err := p.ReadFrom(rb); err != nil {
+			if n, cm, _, err := p.ReadFrom(rb); err != nil {
 				t.Fatal(err)
 			} else {
+				t.Logf("rcvd cmsg: %v", cm)
 				m, err := icmp.ParseMessage(iana.ProtocolICMP, rb[:n])
 				if err != nil {
 					t.Fatal(err)
@@ -315,9 +314,10 @@ func TestRawConnReadWriteMulticastICMP(t *testing.T) {
 				t.Fatal(err)
 			}
 			rb := make([]byte, ipv4.HeaderLen+128)
-			if rh, b, _, err := r.ReadFrom(rb); err != nil {
+			if rh, b, cm, err := r.ReadFrom(rb); err != nil {
 				t.Fatal(err)
 			} else {
+				t.Logf("rcvd cmsg: %v", cm)
 				m, err := icmp.ParseMessage(iana.ProtocolICMP, b)
 				if err != nil {
 					t.Fatal(err)

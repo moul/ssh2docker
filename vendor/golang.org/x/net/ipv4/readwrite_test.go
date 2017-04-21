@@ -1,4 +1,4 @@
-// Copyright 2012 The Go Authors. All rights reserved.
+// Copyright 2012 The Go Authors.  All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"net"
 	"runtime"
-	"strings"
 	"sync"
 	"testing"
 
@@ -91,7 +90,7 @@ func benchmarkReadWriteIPv4UDP(b *testing.B, p *ipv4.PacketConn, wb, rb []byte, 
 
 func TestPacketConnConcurrentReadWriteUnicastUDP(t *testing.T) {
 	switch runtime.GOOS {
-	case "nacl", "plan9", "windows":
+	case "nacl", "plan9", "solaris", "windows":
 		t.Skipf("not supported on %s", runtime.GOOS)
 	}
 
@@ -130,10 +129,7 @@ func TestPacketConnConcurrentReadWriteUnicastUDP(t *testing.T) {
 			t.Errorf("got %v; want %v", rb[:n], wb)
 			return
 		} else {
-			s := cm.String()
-			if strings.Contains(s, ",") {
-				t.Errorf("should be space-separated values: %s", s)
-			}
+			t.Logf("rcvd cmsg: %v", cm)
 		}
 	}
 	writer := func(toggle bool) {

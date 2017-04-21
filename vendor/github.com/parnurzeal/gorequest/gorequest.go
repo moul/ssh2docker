@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
-	"errors"
+	"io"
 	"io/ioutil"
 	"log"
 	"net"
@@ -18,6 +18,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"mime/multipart"
 
@@ -66,7 +68,7 @@ type SuperAgent struct {
 	BasicAuth         struct{ Username, Password string }
 	Debug             bool
 	CurlCommand       bool
-	logger            *log.Logger
+	logger            Logger
 	Retryable         struct {
 		RetryableStatus []int
 		RetryerTime     time.Duration
@@ -123,7 +125,7 @@ func (s *SuperAgent) SetCurlCommand(enable bool) *SuperAgent {
 	return s
 }
 
-func (s *SuperAgent) SetLogger(logger *log.Logger) *SuperAgent {
+func (s *SuperAgent) SetLogger(logger Logger) *SuperAgent {
 	s.logger = logger
 	return s
 }
@@ -1087,116 +1089,138 @@ func (s *SuperAgent) getResponseBytes() (Response, []byte, []error) {
 
 func (s *SuperAgent) MakeRequest() (*http.Request, error) {
 	var (
-		req *http.Request
-		err error
+		req           *http.Request
+		contentType   string // This is only set when the request body content is non-empty.
+		contentReader io.Reader
+		err           error
 	)
 
-	switch s.Method {
-	case POST, PUT, PATCH:
-		if s.TargetType == "json" {
-			// If-case to give support to json array. we check if
-			// 1) Map only: send it as json map from s.Data
-			// 2) Array or Mix of map & array or others: send it as rawstring from s.RawString
-			var contentJson []byte
-			if s.BounceToRawString {
-				contentJson = []byte(s.RawString)
-			} else if len(s.Data) != 0 {
-				contentJson, _ = json.Marshal(s.Data)
-			} else if len(s.SliceData) != 0 {
-				contentJson, _ = json.Marshal(s.SliceData)
-			}
-			contentReader := bytes.NewReader(contentJson)
-			req, err = http.NewRequest(s.Method, s.Url, contentReader)
-			if err != nil {
-				return nil, err
-			}
-			req.Header.Set("Content-Type", "application/json")
-		} else if s.TargetType == "form" || s.TargetType == "form-data" || s.TargetType == "urlencoded" {
-			var contentForm []byte
-			if s.BounceToRawString || len(s.SliceData) != 0 {
-				contentForm = []byte(s.RawString)
-			} else {
-				formData := changeMapToURLValues(s.Data)
-				contentForm = []byte(formData.Encode())
-			}
-			contentReader := bytes.NewReader(contentForm)
-			req, err = http.NewRequest(s.Method, s.Url, contentReader)
-			if err != nil {
-				return nil, err
-			}
-			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		} else if s.TargetType == "text" {
-			req, err = http.NewRequest(s.Method, s.Url, strings.NewReader(s.RawString))
-			req.Header.Set("Content-Type", "text/plain")
-		} else if s.TargetType == "xml" {
-			req, err = http.NewRequest(s.Method, s.Url, strings.NewReader(s.RawString))
-			req.Header.Set("Content-Type", "application/xml")
-		} else if s.TargetType == "multipart" {
-
-			var buf bytes.Buffer
-			mw := multipart.NewWriter(&buf)
-
-			if s.BounceToRawString {
-				fieldName, ok := s.Header["data_fieldname"]
-				if !ok {
-					fieldName = "data"
-				}
-				fw, _ := mw.CreateFormField(fieldName)
-				fw.Write([]byte(s.RawString))
-			}
-
-			if len(s.Data) != 0 {
-				formData := changeMapToURLValues(s.Data)
-				for key, values := range formData {
-					for _, value := range values {
-						fw, _ := mw.CreateFormField(key)
-						fw.Write([]byte(value))
-					}
-				}
-			}
-
-			if len(s.SliceData) != 0 {
-				fieldName, ok := s.Header["json_fieldname"]
-				if !ok {
-					fieldName = "data"
-				}
-				// copied from CreateFormField() in mime/multipart/writer.go
-				h := make(textproto.MIMEHeader)
-				fieldName = strings.Replace(strings.Replace(fieldName, "\\", "\\\\", -1), `"`, "\\\"", -1)
-				h.Set("Content-Disposition", fmt.Sprintf(`form-data; name="%s"`, fieldName))
-				h.Set("Content-Type", "application/json")
-				fw, _ := mw.CreatePart(h)
-				contentJson, err := json.Marshal(s.SliceData)
-				if err != nil {
-					return nil, err
-				}
-				fw.Write(contentJson)
-			}
-
-			// add the files
-			if len(s.FileData) != 0 {
-				for _, file := range s.FileData {
-					fw, _ := mw.CreateFormFile(file.Fieldname, file.Filename)
-					fw.Write(file.Data)
-				}
-			}
-
-			// close before call to FormDataContentType ! otherwise its not valid multipart
-			mw.Close()
-
-			req, err = http.NewRequest(s.Method, s.Url, &buf)
-			req.Header.Set("Content-Type", mw.FormDataContentType())
-		} else {
-			// let's return an error instead of an nil pointer exception here
-			return nil, errors.New("TargetType '" + s.TargetType + "' could not be determined")
-		}
-	case "":
+	if s.Method == "" {
 		return nil, errors.New("No method specified")
-	default:
-		req, err = http.NewRequest(s.Method, s.Url, nil)
-		if err != nil {
-			return nil, err
+	}
+
+	// !!! Important Note !!!
+	//
+	// Throughout this region, contentReader and contentType are only set when
+	// the contents will be non-empty.
+	// This is done avoid ever sending a non-nil request body with nil contents
+	// to http.NewRequest, because it contains logic which dependends on
+	// whether or not the body is "nil".
+	//
+	// See PR #136 for more information:
+	//
+	//     https://github.com/parnurzeal/gorequest/pull/136
+	//
+	if s.TargetType == "json" {
+		// If-case to give support to json array. we check if
+		// 1) Map only: send it as json map from s.Data
+		// 2) Array or Mix of map & array or others: send it as rawstring from s.RawString
+		var contentJson []byte
+		if s.BounceToRawString {
+			contentJson = []byte(s.RawString)
+		} else if len(s.Data) != 0 {
+			contentJson, _ = json.Marshal(s.Data)
+		} else if len(s.SliceData) != 0 {
+			contentJson, _ = json.Marshal(s.SliceData)
 		}
+		if contentJson != nil {
+			contentReader = bytes.NewReader(contentJson)
+			contentType = "application/json"
+		}
+	} else if s.TargetType == "form" || s.TargetType == "form-data" || s.TargetType == "urlencoded" {
+		var contentForm []byte
+		if s.BounceToRawString || len(s.SliceData) != 0 {
+			contentForm = []byte(s.RawString)
+		} else {
+			formData := changeMapToURLValues(s.Data)
+			contentForm = []byte(formData.Encode())
+		}
+		if len(contentForm) != 0 {
+			contentReader = bytes.NewReader(contentForm)
+			contentType = "application/x-www-form-urlencoded"
+		}
+	} else if s.TargetType == "text" {
+		if len(s.RawString) != 0 {
+			contentReader = strings.NewReader(s.RawString)
+			contentType = "text/plain"
+		}
+	} else if s.TargetType == "xml" {
+		if len(s.RawString) != 0 {
+			contentReader = strings.NewReader(s.RawString)
+			contentType = "application/xml"
+		}
+	} else if s.TargetType == "multipart" {
+		var (
+			buf = &bytes.Buffer{}
+			mw  = multipart.NewWriter(buf)
+		)
+
+		if s.BounceToRawString {
+			fieldName, ok := s.Header["data_fieldname"]
+			if !ok {
+				fieldName = "data"
+			}
+			fw, _ := mw.CreateFormField(fieldName)
+			fw.Write([]byte(s.RawString))
+			contentReader = buf
+		}
+
+		if len(s.Data) != 0 {
+			formData := changeMapToURLValues(s.Data)
+			for key, values := range formData {
+				for _, value := range values {
+					fw, _ := mw.CreateFormField(key)
+					fw.Write([]byte(value))
+				}
+			}
+			contentReader = buf
+		}
+
+		if len(s.SliceData) != 0 {
+			fieldName, ok := s.Header["json_fieldname"]
+			if !ok {
+				fieldName = "data"
+			}
+			// copied from CreateFormField() in mime/multipart/writer.go
+			h := make(textproto.MIMEHeader)
+			fieldName = strings.Replace(strings.Replace(fieldName, "\\", "\\\\", -1), `"`, "\\\"", -1)
+			h.Set("Content-Disposition", fmt.Sprintf(`form-data; name="%s"`, fieldName))
+			h.Set("Content-Type", "application/json")
+			fw, _ := mw.CreatePart(h)
+			contentJson, err := json.Marshal(s.SliceData)
+			if err != nil {
+				return nil, err
+			}
+			fw.Write(contentJson)
+			contentReader = buf
+		}
+
+		// add the files
+		if len(s.FileData) != 0 {
+			for _, file := range s.FileData {
+				fw, _ := mw.CreateFormFile(file.Fieldname, file.Filename)
+				fw.Write(file.Data)
+			}
+			contentReader = buf
+		}
+
+		// close before call to FormDataContentType ! otherwise its not valid multipart
+		mw.Close()
+
+		if contentReader != nil {
+			contentType = mw.FormDataContentType()
+		}
+	} else {
+		// let's return an error instead of an nil pointer exception here
+		return nil, errors.New("TargetType '" + s.TargetType + "' could not be determined")
+	}
+
+	if req, err = http.NewRequest(s.Method, s.Url, contentReader); err != nil {
+		return nil, err
+	}
+
+	if len(contentType) != 0 {
+		req.Header.Set("Content-Type", contentType)
 	}
 
 	for k, v := range s.Header {
