@@ -5,7 +5,7 @@
 
 [![Build Status](https://travis-ci.org/moul/ssh2docker.svg?branch=master)](https://travis-ci.org/moul/ssh2docker)
 [![GoDoc](https://godoc.org/github.com/moul/ssh2docker?status.svg)](https://godoc.org/github.com/moul/ssh2docker)
-[![License](https://img.shields.io/github/license/moul/ssh2docker.svg)](https://github.com/moul/ssh2docker/blob/master/LICENSE)
+[![License](https://img.shields.io/github/license/moul/ssh2docker.svg)](https://github.com/moul/ssh2docker/blob/master/LICENSE) [![GuardRails badge](https://badges.production.guardrails.io/moul/ssh2docker.svg)](https://www.guardrails.io)
 
 ![](https://raw.githubusercontent.com/moul/ssh2docker/master/resources/ssh2docker.png)
 
