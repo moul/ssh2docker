@@ -1,4 +1,4 @@
-FROM golang:1.12
+FROM golang:1.14
 COPY . /go/src/github.com/moul/ssh2docker
 WORKDIR /go/src/github.com/moul/ssh2docker
 RUN make
